@@ -1,0 +1,30 @@
+# Общие правила репозитория. Правила Next.js — в frontend/.gitignore.
+
+# dependencies
+node_modules/
+
+# build output
+dist/
+.next/
+out/
+build/
+
+# testing
+coverage/
+
+# env files: секреты не коммитятся, шаблон .env.example — коммитится
+.env*
+!.env.example
+
+# typescript
+*.tsbuildinfo
+
+# logs
+*.log
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
