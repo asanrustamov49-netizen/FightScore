@@ -6,7 +6,9 @@
 
 ## Структура репозитория
 
-- `frontend/` — Next.js 16 (App Router), React 19, TypeScript. Отдельный git-репозиторий.
+Один git-репозиторий в корне `FightScore/` (ветка `master`, remote нет). История шаблона frontend сохранена: смотреть через `git log --follow frontend/<файл>`.
+
+- `frontend/` — Next.js 16 (App Router), React 19, TypeScript.
 - `backend/` — NestJS, TypeScript, тесты на Vitest, линтер oxlint.
 - `docs/` — ТЗ и архитектурные решения.
 
