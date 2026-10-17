@@ -63,7 +63,7 @@ export function UsersPage() {
             {error && <Notice tone="error">{error}</Notice>}
             {done && <Notice tone="success">{done}</Notice>}
             <FormGrid cols={4}>
-              <Field label="Логин" hint="Латиница, цифры, . _ -">
+              <Field label="Логин" hint="Латиница, цифры, . _ - @ +">
                 {(id) => <Input id={id} value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} required autoComplete="off" />}
               </Field>
               <Field label="Имя">{(id) => <Input id={id} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />}</Field>

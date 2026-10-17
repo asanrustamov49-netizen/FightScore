@@ -73,7 +73,7 @@ export function AuthForm({ allowRegister = false, initialMode = "login", onSucce
       )}
       {error && <Notice tone="error">{error}</Notice>}
       <form className={styles.form} onSubmit={submit}>
-        <Field label="Логин" hint={activeMode === "register" ? "Латиница, цифры, точка, дефис, подчёркивание" : undefined}>
+        <Field label="Логин" hint={activeMode === "register" ? "Латиница, цифры и символы . _ - @ + (подойдёт e-mail)" : undefined}>
           {(id) => <Input id={id} autoComplete="username" value={login} onChange={(e) => setLogin(e.target.value)} required autoFocus />}
         </Field>
         {activeMode === "register" && (
@@ -100,6 +100,11 @@ export function AuthForm({ allowRegister = false, initialMode = "login", onSucce
       </form>
       {activeMode === "register" ? (
         <p className={styles.note}>Аккаунт даёт право создавать свои турниры. Другие турниры и их участники вам видны не будут.</p>
+      ) : canRegister ? (
+        <p className={styles.note}>
+          Нет аккаунта? Организатор регистрируется сам на вкладке «Регистрация организатора». Аккаунт судьи выдаёт
+          организатор турнира.
+        </p>
       ) : (
         <p className={styles.note}>Локальная учётная запись работает без интернета.</p>
       )}

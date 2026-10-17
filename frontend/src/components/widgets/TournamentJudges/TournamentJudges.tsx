@@ -56,7 +56,7 @@ export function TournamentJudges({ tournamentId }: { tournamentId: string }) {
         <form className={`${formClass} ${insetClass}`} onSubmit={submit}>
           {error && <Notice tone="error">{error}</Notice>}
           <FormGrid cols={2}>
-            <Field label="Логин" hint="Латиница, цифры, . _ -">
+            <Field label="Логин" hint="Латиница, цифры, . _ - @ +">
               {(id) => <Input id={id} value={form.login} onChange={(e) => setForm({ ...form, login: e.target.value })} required autoComplete="off" />}
             </Field>
             <Field label="Имя судьи">{(id) => <Input id={id} value={form.displayName} onChange={(e) => setForm({ ...form, displayName: e.target.value })} required />}</Field>

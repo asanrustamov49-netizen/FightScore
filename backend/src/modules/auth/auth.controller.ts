@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { APP_CONFIG, type AppConfig } from '../../config/config.js';
 import { clearSessionCookie, sessionCookie } from '../../common/cookies.js';
 import { MIN_PASSWORD_LENGTH } from '../../common/password.js';
-import { parse } from '../../common/validation.js';
+import { login as loginField, parse } from '../../common/validation.js';
 import { AccessService } from '../access/access.service.js';
 import { type AuthedRequest, ClientIp, CurrentUser, Public } from './auth.guard.js';
 import { AuthService, type SessionUser } from './auth.service.js';
@@ -12,7 +12,7 @@ import { AuthService, type SessionUser } from './auth.service.js';
 const loginSchema = z.object({ login: z.string().trim().min(1).max(100), password: z.string().min(1).max(200) });
 
 const registerSchema = z.object({
-  login: z.string().trim().min(3).max(60).regex(/^[a-zA-Z0-9._-]+$/, 'Латиница, цифры, точка, дефис, подчёркивание'),
+  login: loginField,
   displayName: z.string().trim().min(1).max(120),
   password: z.string().min(MIN_PASSWORD_LENGTH, `Пароль не короче ${MIN_PASSWORD_LENGTH} символов`).max(200),
 });

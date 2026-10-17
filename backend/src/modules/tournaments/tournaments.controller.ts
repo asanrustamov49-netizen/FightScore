@@ -2,7 +2,7 @@ import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common'
 import { z } from 'zod';
 import { AppError } from '../../common/errors.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../../common/password.js';
-import { isoDate, parse, trimmed, uuid } from '../../common/validation.js';
+import { isoDate, login, parse, trimmed, uuid } from '../../common/validation.js';
 import { DatabaseService } from '../../database/database.service.js';
 import { AccessService } from '../access/access.service.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -23,7 +23,7 @@ const tournamentSchema = z
 const registerSchema = z.object({ athleteId: uuid, registrationNumber: z.string().trim().max(40).nullish() });
 
 const judgeSchema = z.object({
-  login: z.string().trim().min(3).max(60).regex(/^[a-zA-Z0-9._-]+$/, 'Латиница, цифры, точка, дефис, подчёркивание'),
+  login,
   displayName: z.string().trim().min(1).max(120),
   password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
   role: z.enum(['chief_judge', 'judge']),

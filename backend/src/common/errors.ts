@@ -46,6 +46,9 @@ export class AppError extends Error {
 /** Maps Postgres constraint errors to API errors so clients get a 409/400 instead of 500. */
 export function fromPgError(err: unknown): AppError | undefined {
   const e = err as { code?: string; constraint?: string; detail?: string };
+  if (e?.code === '23505' && e.constraint === 'users_login_uq') {
+    return new AppError('CONFLICT', 'Этот логин уже занят. Выберите другой или войдите под ним.', { constraint: e.constraint });
+  }
   if (e?.code === '23505') return new AppError('CONFLICT', 'Запись с такими данными уже существует', { constraint: e.constraint });
   if (e?.code === '23503') return new AppError('VALIDATION', 'Ссылка на несуществующую или используемую запись', { constraint: e.constraint });
   if (e?.code === '23514') return new AppError('VALIDATION', 'Данные нарушают ограничение', { constraint: e.constraint });

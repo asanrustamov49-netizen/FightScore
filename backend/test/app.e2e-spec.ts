@@ -161,6 +161,36 @@ describe.skipIf(!TEST_DB)('FightScore MVP scenario (PostgreSQL)', () => {
     expect((await api().post('/api/tournaments').set(H).set('Origin', 'http://evil.example').set('Cookie', cookies.org).send({})).status).toBe(403);
   });
 
+  it('self-registration grants only organizer_self; judge accounts come from the tournament organizer', async () => {
+    const reg = await api()
+      .post('/api/auth/register')
+      .set(H)
+      .send({ login: 'new.org@example.com', displayName: 'New Org', password: PASSWORD, role: 'owner', roles: ['owner'] });
+    expect(reg.status, JSON.stringify(reg.body)).toBe(201);
+    expect(reg.body.roles.map((r: any) => r.code ?? r)).toEqual(['organizer_self']);
+    expect(reg.body.capabilities).toMatchObject({ organizer: true, judge: false, displays: false });
+    const self = reg.headers['set-cookie'][0].split(';')[0];
+    const asSelf = (p: string, body: object) => api().post(`/api${p}`).set(H).set('Cookie', self).send(body);
+
+    const dup = await api().post('/api/auth/register').set(H).send({ login: 'NEW.ORG@example.com', displayName: 'X', password: PASSWORD });
+    expect(dup.status).toBe(409);
+    expect(dup.body.message).toMatch(/логин уже занят/);
+    expect((await asSelf('/users', { login: 'x.owner', displayName: 'X', password: PASSWORD, role: 'organizer' })).status).toBe(403);
+
+    const own = await asSelf('/tournaments', { name: 'Self Cup', startsOn: '2026-10-16', endsOn: '2026-10-16', disciplineIds: [fx.mma] });
+    expect(own.status, JSON.stringify(own.body)).toBe(201);
+    const judge = await asSelf(`/tournaments/${own.body.id}/judges`, { login: 'self.judge', displayName: 'Self Judge', password: PASSWORD, role: 'judge' });
+    expect(judge.status, JSON.stringify(judge.body)).toBe(201);
+    const login = await api().post('/api/auth/login').set(H).send({ login: 'self.judge', password: PASSWORD });
+    expect(login.status).toBe(200);
+    expect(login.body.capabilities).toMatchObject({ organizer: false, judge: true });
+
+    // Another organizer's tournament: no right to create judges there.
+    const foreign = await as('org').post('/tournaments', { name: 'Org Cup', startsOn: '2026-10-16', endsOn: '2026-10-16', disciplineIds: [fx.mma] });
+    expect(foreign.status).toBe(201);
+    expect((await asSelf(`/tournaments/${foreign.body.id}/judges`, { login: 'x.judge', displayName: 'X', password: PASSWORD, role: 'judge' })).status).toBe(403);
+  });
+
   it('lets the organizer create a tournament, athletes and a match; judges cannot', async () => {
     const t = await as('org').post('/tournaments', { name: 'E2E Cup', startsOn: '2026-10-16', endsOn: '2026-10-17', disciplineIds: [fx.mma] });
     expect(t.status, JSON.stringify(t.body)).toBe(201);

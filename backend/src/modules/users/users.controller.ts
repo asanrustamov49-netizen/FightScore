@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Post } from '@nestjs/common';
 import { z } from 'zod';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../../common/password.js';
-import { parse } from '../../common/validation.js';
+import { login, parse } from '../../common/validation.js';
 import { DatabaseService } from '../../database/database.service.js';
 import { AccessService } from '../access/access.service.js';
 import { AuditService } from '../audit/audit.service.js';
@@ -11,7 +11,7 @@ import type { SessionUser } from '../auth/auth.service.js';
 const ASSIGNABLE_ROLES = ['organizer', 'chief_judge', 'judge', 'display_operator'] as const;
 
 const createSchema = z.object({
-  login: z.string().trim().min(3).max(60).regex(/^[a-zA-Z0-9._-]+$/, 'Латиница, цифры, точка, дефис, подчёркивание'),
+  login,
   displayName: z.string().trim().min(1).max(120),
   password: z.string().min(MIN_PASSWORD_LENGTH).max(200),
   role: z.enum(ASSIGNABLE_ROLES),
