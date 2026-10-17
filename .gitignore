@@ -28,3 +28,7 @@ Thumbs.db
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Claude Code: personal settings and local preview configuration stay on this machine
+.claude/settings.local.json
+.claude/launch.json
