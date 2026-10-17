@@ -1,0 +1,39 @@
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  padding: 1rem 1.25rem;
+  background: var(--fs-surface);
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius);
+}
+
+.icon {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 10px;
+  background: var(--fs-blue-soft);
+  color: var(--fs-blue-strong);
+}
+
+.text {
+  flex: 1;
+  min-width: 14rem;
+  font-size: 0.9rem;
+  color: var(--fs-text-muted);
+
+  strong {
+    display: block;
+    color: var(--fs-text);
+    font-size: 0.98rem;
+  }
+}
+
+.actions {
+  display: flex;
+  gap: 0.5rem;
+}

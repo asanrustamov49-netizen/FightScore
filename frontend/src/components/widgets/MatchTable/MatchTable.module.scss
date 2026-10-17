@@ -1,0 +1,58 @@
+.vs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 12rem;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  &::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-radius: 2px;
+    flex: none;
+  }
+}
+
+.red::before {
+  background: var(--fs-red);
+}
+
+.blue::before {
+  background: var(--fs-blue);
+}
+
+.winner {
+  font-weight: 700;
+}
+
+.empty {
+  color: var(--fs-text-faint);
+  font-style: italic;
+}
+
+.score {
+  font-family: var(--fs-font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.number {
+  font-family: var(--fs-font-display);
+  font-weight: 700;
+  color: var(--fs-text-muted);
+}
+
+.actions {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}

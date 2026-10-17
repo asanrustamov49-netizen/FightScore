@@ -1,0 +1,55 @@
+@use "../../../styles/mixins" as *;
+
+.page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background:
+    radial-gradient(60rem 28rem at 0% -20%, rgba(229, 51, 63, 0.14), transparent 60%),
+    radial-gradient(60rem 28rem at 100% -20%, rgba(47, 107, 255, 0.16), transparent 60%),
+    var(--fs-bg);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+
+  @include up($bp-md) {
+    padding: 1.25rem 2.5rem;
+  }
+}
+
+.main {
+  flex: 1;
+  width: min(760px, 100%);
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.head {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.iconBox {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 12px;
+  background: var(--fs-surface);
+  border: 1px solid var(--fs-border);
+}
+
+.lead {
+  margin: 0.25rem 0 0;
+  color: var(--fs-text-muted);
+}

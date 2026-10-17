@@ -1,0 +1,33 @@
+.side {
+  font-weight: 700;
+}
+
+.red {
+  color: var(--fs-red-strong);
+}
+
+.blue {
+  color: var(--fs-blue-strong);
+}
+
+.score {
+  text-align: right;
+  font-family: var(--fs-font-display);
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.facts {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.45rem 1rem;
+
+  dt {
+    color: var(--fs-text-muted);
+  }
+
+  dd {
+    margin: 0;
+  }
+}

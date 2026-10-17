@@ -1,0 +1,49 @@
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: var(--log-height, 420px);
+  overflow-y: auto;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr auto;
+  gap: 0.25rem 0.75rem;
+  align-items: start;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid rgba(36, 57, 94, 0.6);
+  font-size: 0.88rem;
+}
+
+.seq {
+  font-family: var(--fs-font-mono);
+  color: var(--fs-text-faint);
+}
+
+.text {
+  font-weight: 550;
+}
+
+.meta {
+  grid-column: 2 / span 2;
+  font-size: 0.78rem;
+  color: var(--fs-text-muted);
+}
+
+.voided .text {
+  text-decoration: line-through;
+  color: var(--fs-text-faint);
+}
+
+.correction .text {
+  color: var(--fs-warning);
+}
+
+.red {
+  box-shadow: inset 3px 0 0 var(--fs-red);
+}
+
+.blue {
+  box-shadow: inset 3px 0 0 var(--fs-blue);
+}

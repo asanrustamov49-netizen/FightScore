@@ -1,0 +1,109 @@
+// Design tokens. Fonts are system stacks so the app needs no network access (PROJECT_SPEC §6).
+:root {
+  --fs-bg: #07101f;
+  --fs-bg-raised: #0d1a30;
+  --fs-surface: #12223d;
+  --fs-surface-2: #182c4d;
+  --fs-border: #24395e;
+  --fs-border-strong: #34507f;
+  --fs-text: #eef3fb;
+  --fs-text-muted: #95a6c2;
+  --fs-text-faint: #6c7f9f;
+
+  --fs-red: #e5333f;
+  --fs-red-strong: #ff4553;
+  --fs-red-soft: rgba(229, 51, 63, 0.14);
+  --fs-blue: #2f6bff;
+  --fs-blue-strong: #4d84ff;
+  --fs-blue-soft: rgba(47, 107, 255, 0.14);
+  --fs-accent: #f2b33d;
+  --fs-success: #2fbf71;
+  --fs-warning: #f2b33d;
+  --fs-danger: #ff5c5c;
+  --fs-focus: #8fb4ff;
+
+  --fs-radius-sm: 6px;
+  --fs-radius: 10px;
+  --fs-radius-lg: 16px;
+  --fs-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+
+  --fs-font: "Segoe UI", "Inter", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-font-display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --fs-font-mono: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", monospace;
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: var(--fs-bg);
+  color: var(--fs-text);
+  font-family: var(--fs-font);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--fs-blue-strong);
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  font-family: var(--fs-font-display);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.2;
+}
+
+h1 {
+  font-size: 1.75rem;
+}
+
+h2 {
+  font-size: 1.2rem;
+}
+
+h3 {
+  font-size: 1rem;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+:focus-visible {
+  outline: 2px solid var(--fs-focus);
+  outline-offset: 2px;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

@@ -1,0 +1,246 @@
+// TV layout: sized in viewport units so it reads from a distance on any screen (PROJECT_SPEC §8.9).
+.screen {
+  position: relative;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background: #000;
+  color: #fff;
+  overflow: hidden;
+  cursor: default;
+  user-select: none;
+}
+
+.head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 2vw;
+  padding: 1.6vh 2.5vw;
+  background: #06101f;
+  font-size: clamp(0.9rem, 1.6vw, 2rem);
+  font-weight: 650;
+  letter-spacing: 0.04em;
+}
+
+.headLeft {
+  display: flex;
+  gap: 1.5vw;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.muted {
+  color: #9fb0cc;
+}
+
+.demo {
+  padding: 0.2em 0.6em;
+  border: 2px solid #f2b33d;
+  color: #f2b33d;
+  border-radius: 0.3em;
+  font-size: 0.75em;
+  text-transform: uppercase;
+}
+
+.status {
+  padding: 0.2em 0.7em;
+  border-radius: 0.3em;
+  background: #1b2c4a;
+  text-transform: uppercase;
+  font-size: 0.85em;
+}
+
+.statusLive {
+  background: #e5333f;
+}
+
+.board {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: stretch;
+  min-height: 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 3vh 3vw;
+  min-width: 0;
+}
+
+.red {
+  background: linear-gradient(160deg, #c81f2b 0%, #8e0f18 100%);
+}
+
+.blue {
+  background: linear-gradient(200deg, #1f5ae6 0%, #0d2f8a 100%);
+  text-align: right;
+}
+
+.name {
+  font-family: var(--fs-font-display);
+  font-size: clamp(1.6rem, 4.2vw, 6rem);
+  font-weight: 800;
+  line-height: 1.05;
+  text-transform: uppercase;
+  word-break: break-word;
+}
+
+.country {
+  margin-top: 1vh;
+  font-size: clamp(1rem, 2.2vw, 3rem);
+  font-weight: 650;
+  opacity: 0.92;
+}
+
+.score {
+  font-family: var(--fs-font-display);
+  font-size: clamp(6rem, 22vw, 40rem);
+  font-weight: 800;
+  line-height: 0.85;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0.04em 0.08em rgba(0, 0, 0, 0.35);
+}
+
+.penalties {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8vw;
+  min-height: 3vh;
+  font-size: clamp(0.9rem, 1.6vw, 2.4rem);
+  font-weight: 700;
+}
+
+.blue .penalties {
+  justify-content: flex-end;
+}
+
+.penalty {
+  padding: 0.15em 0.55em;
+  border-radius: 0.3em;
+  background: #f2b33d;
+  color: #111;
+}
+
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vh;
+  padding: 2vh 2.5vw;
+  background: #050b16;
+  min-width: 22vw;
+}
+
+.period {
+  font-size: clamp(1rem, 2.2vw, 3rem);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #9fb0cc;
+}
+
+.clock {
+  font-family: var(--fs-font-display);
+  font-size: clamp(3rem, 10vw, 18rem);
+  font-weight: 800;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.clockStopped {
+  color: #f2b33d;
+}
+
+.foot {
+  padding: 1.2vh 2.5vw;
+  background: #06101f;
+  font-size: clamp(0.8rem, 1.2vw, 1.6rem);
+  color: #9fb0cc;
+  display: flex;
+  justify-content: space-between;
+  gap: 2vw;
+}
+
+.result {
+  position: absolute;
+  left: 50%;
+  bottom: 8vh;
+  transform: translateX(-50%);
+  padding: 1.5vh 3vw;
+  border-radius: 1vh;
+  background: rgba(0, 0, 0, 0.85);
+  border: 3px solid #fff;
+  font-size: clamp(1.2rem, 3vw, 4.5rem);
+  font-weight: 800;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2vh;
+  text-align: center;
+  font-size: clamp(1.5rem, 4vw, 5rem);
+  font-weight: 800;
+}
+
+.idleSub {
+  font-size: 0.45em;
+  font-weight: 600;
+  color: #9fb0cc;
+}
+
+.offline {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: 12vh;
+  background: rgba(0, 0, 0, 0.55);
+  pointer-events: none;
+}
+
+.offlineBox {
+  padding: 2vh 3vw;
+  background: #b3141f;
+  border-radius: 1vh;
+  font-size: clamp(1.2rem, 3vw, 4rem);
+  font-weight: 800;
+  text-align: center;
+}
+
+.offlineSub {
+  display: block;
+  margin-top: 0.6vh;
+  font-size: 0.45em;
+  font-weight: 600;
+}
+
+.fullscreen {
+  position: absolute;
+  right: 1.5vw;
+  bottom: 6vh;
+  padding: 0.6rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  cursor: pointer;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+}

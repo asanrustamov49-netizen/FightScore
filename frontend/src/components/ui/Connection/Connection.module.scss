@@ -1,0 +1,42 @@
+.indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 650;
+  border: 1px solid var(--fs-border);
+  background: var(--fs-bg-raised);
+}
+
+.dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+}
+
+.online .dot {
+  background: var(--fs-success);
+  box-shadow: 0 0 0 3px rgba(47, 191, 113, 0.25);
+}
+
+.connecting .dot {
+  background: var(--fs-warning);
+  animation: blink 0.9s infinite;
+}
+
+.offline {
+  border-color: var(--fs-danger);
+  color: var(--fs-danger);
+
+  .dot {
+    background: var(--fs-danger);
+  }
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0.25;
+  }
+}

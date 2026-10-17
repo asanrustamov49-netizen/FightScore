@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#07101f" />
+    <title>Нет связи · FightScore</title>
+    <style>
+      :root { color-scheme: dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        padding: 1.5rem;
+        box-sizing: border-box;
+        background: #07101f;
+        color: #eef3fb;
+        font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+      }
+      main {
+        max-width: 30rem;
+        padding: 2rem;
+        border: 1px solid #24395e;
+        border-radius: 16px;
+        background: #12223d;
+      }
+      .mark { display: inline-grid; grid-template-columns: 1fr 1fr; gap: 3px; width: 2rem; height: 2rem; transform: skewX(-8deg); }
+      .mark span:first-child { background: #e5333f; }
+      .mark span:last-child { background: #2f6bff; }
+      h1 { font-size: 1.4rem; margin: 1rem 0 0.5rem; }
+      p { color: #95a6c2; line-height: 1.5; }
+      button {
+        margin-top: 0.5rem;
+        padding: 0.7rem 1.2rem;
+        border: none;
+        border-radius: 6px;
+        background: #2f6bff;
+        color: #fff;
+        font: inherit;
+        font-weight: 650;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <span class="mark" aria-hidden="true"><span></span><span></span></span>
+      <h1>Нет связи с сервером FightScore</h1>
+      <p>
+        FightScore показывает счёт и время только с сервера, поэтому без связи страница не открывается. Проверьте подключение к сети
+        соревнований и что сервер запущен, затем повторите попытку.
+      </p>
+      <button type="button" onclick="location.reload()">Повторить</button>
+    </main>
+  </body>
+</html>
