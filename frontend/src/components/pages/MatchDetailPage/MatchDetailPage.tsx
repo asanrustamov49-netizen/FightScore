@@ -184,7 +184,7 @@ export function MatchDetailPage() {
                 <dd>{m.state.periodIndex ? `${m.state.periodIndex} из ${def?.periods.count ?? "?"}` : "—"}</dd>
                 <dt>Время</dt>
                 <dd>{formatClock(m.clock.remainingMs)}{m.clock.running ? " (идёт)" : ""}</dd>
-                <dt>Версия</dt>
+                <dt title="Счётчик подтверждённых изменений состояния, нужен для синхронизации экранов">Изменений</dt>
                 <dd>{m.version}</dd>
                 <dt>Судьи</dt>
                 <dd>

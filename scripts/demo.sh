@@ -8,6 +8,7 @@
 #   scripts/demo.sh status    report each component; exit code 1 if anything is not running
 #   scripts/demo.sh rebuild   rebuild backend and frontend (demo must be stopped)
 #
+# Web port: FS_DEMO_WEB_PORT (default 3000; remembered for later stop/status), e.g. when 3000 is taken.
 # Overrides (for tests): FS_DEMO_DIR, FS_DEMO_PGPORT, FS_DEMO_ENV, PG_BIN.
 set -euo pipefail
 
@@ -21,7 +22,10 @@ RUN="$HOME_DIR/run"
 MARKER="$HOME_DIR/.initialized"
 ENV_DEMO="${FS_DEMO_ENV:-$ROOT/backend/.env.demo}" # gitignored; holds the generated DB password
 BACKEND_PORT=3001
-FRONTEND_PORT=3000
+DEFAULT_WEB_PORT=3000
+# Explicit FS_DEMO_WEB_PORT wins; otherwise the port of the last start, so stop/status find the same process.
+FRONTEND_PORT="${FS_DEMO_WEB_PORT:-$(tr -dc '0-9' 2>/dev/null <"$RUN/frontend.port" || true)}"
+FRONTEND_PORT="${FRONTEND_PORT:-$DEFAULT_WEB_PORT}"
 DEMO_DB=fightscore_demo
 TEST_DB=fightscore_test
 DB_USER=fightscore
@@ -32,6 +36,9 @@ DEMO_FLAG="--fightscore-demo"
 
 say() { printf '%s\n' "$*"; }
 die() { printf 'ERROR: %s\n' "$*" >&2; exit 1; }
+
+[[ "$FRONTEND_PORT" =~ ^[0-9]{4,5}$ ]] && [ "$FRONTEND_PORT" -ge 1024 ] && [ "$FRONTEND_PORT" -le 65535 ] && [ "$FRONTEND_PORT" != "$BACKEND_PORT" ] ||
+  die "FS_DEMO_WEB_PORT must be a port from 1024 to 65535 other than $BACKEND_PORT"
 lower() { printf '%s' "$1" | tr 'A-Z\\' 'a-z/'; }
 pg() { "$PG_BIN/$1.exe" "${@:2}"; }
 
@@ -249,12 +256,21 @@ launch() { # $1 = component; leaves a running, verified, healthy process or fail
   local c="$1" port; port="$(port_of "$c")"
   read -r state pid <<<"$(owner "$c")"
   case "$state" in
-    foreign) say "FAIL $c: port $port is used by another process (pid $pid: $(cmdline "$pid" | cut -c1-80)). Not started."; return 1 ;;
+    foreign) say "FAIL $c: port $port is used by another process (pid $pid: $(cmdline "$pid" | cut -c1-80)). Not started."
+      [ "$c" = frontend ] && say "     Stop that process yourself, or use another port: FS_DEMO_WEB_PORT=3100 bash scripts/demo.sh start"
+      return 1 ;;
     ours) healthy "$c" && { say "ok   $c already running (pid $pid)"; return 0; }
       say "FAIL $c: running (pid $pid) but not healthy; run scripts/demo.sh stop, then start"; return 1 ;;
   esac
   if [ "$c" = backend ]; then
-    (cd "$ROOT/backend" && DATABASE_URL="$DB_URL" detached nowait "$(cygpath -m "$RUN/backend.log")" node "$BACKEND_ENTRY" "$DEMO_FLAG")
+    # On a non-default web port the backend must accept that origin (CSRF and WebSocket checks). Only this process
+    # gets the override; backend/.env is untouched. 3000 stays allowed for a dev server on the default port.
+    local origins=""
+    [ "$FRONTEND_PORT" = "$DEFAULT_WEB_PORT" ] ||
+      origins="http://localhost:$DEFAULT_WEB_PORT,http://127.0.0.1:$DEFAULT_WEB_PORT,http://localhost:$FRONTEND_PORT,http://127.0.0.1:$FRONTEND_PORT"
+    (cd "$ROOT/backend" && export DATABASE_URL="$DB_URL" && { [ -z "$origins" ] || export PUBLIC_ORIGINS="$origins"; } &&
+      detached nowait "$(cygpath -m "$RUN/backend.log")" node "$BACKEND_ENTRY" "$DEMO_FLAG")
+    echo "$FRONTEND_PORT" >"$RUN/backend.web-port"
   else
     (cd "$ROOT/frontend" && NEXT_TELEMETRY_DISABLED=1 detached nowait "$(cygpath -m "$RUN/frontend.log")" \
       node "$FRONTEND_ENTRY" start -H 127.0.0.1 -p "$port" "$ROOT_W/frontend")
@@ -281,6 +297,14 @@ start() {
   build_if_missing
   warn_stale
   with_db_env node dist/cli/migrate.js >/dev/null || die "migrations failed"
+  # A running backend accepts only the web port it was started for.
+  local state pid served
+  read -r state pid <<<"$(owner backend)"
+  served="$(tr -dc '0-9' 2>/dev/null <"$RUN/backend.web-port" || true)"
+  if [ "$state" = ours ] && [ "${served:-$DEFAULT_WEB_PORT}" != "$FRONTEND_PORT" ]; then
+    die "the running backend serves web port ${served:-$DEFAULT_WEB_PORT}, not $FRONTEND_PORT. Run: scripts/demo.sh stop, then start again"
+  fi
+  echo "$FRONTEND_PORT" >"$RUN/frontend.port"
   local rc=0
   launch backend || rc=1
   [ $rc = 0 ] && { launch frontend || rc=1; }

@@ -9,5 +9,7 @@ export default defineConfig({
     globals: true,
     root: './',
     include: ['**/*.spec.ts'],
+    // The first Nest testing module compiles cold; on a loaded Windows machine that alone can pass the 5 s default.
+    testTimeout: 20_000,
   },
 });

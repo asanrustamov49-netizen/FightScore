@@ -74,6 +74,7 @@ export function TournamentDetailPage() {
   const disciplineIds = new Set(tour.disciplines.map((d) => d.id));
   const usableRules = (rules.data ?? []).filter((r) => r.status === "approved" && !r.profile_archived_at && disciplineIds.has(r.discipline_id));
   const next = NEXT_STATUS[tour.status];
+  const finished = tour.status === "completed";
   const hrefFor = (tabId: string) => (tabId === "overview" ? pathname : `${pathname}?tab=${tabId}`);
 
   const asInput = (status: TournamentDetail["status"]): TournamentInput => ({
@@ -227,7 +228,7 @@ export function TournamentDetailPage() {
         />
 
         {tab === "overview" && (
-          <Columns sideFirstOnNarrow={canManage}>
+          <Columns sideFirstOnNarrow={canManage || finished}>
             <Stack>
               <Card title="Текущие и ближайшие поединки" actions={<Link href={hrefFor("matches")}>Все поединки</Link>} flush>
                 {matches.data ? (
@@ -235,7 +236,7 @@ export function TournamentDetailPage() {
                     matches={[...live, ...upcoming].slice(0, 8)}
                     showTournament={false}
                     emptyText="Нет текущих и запланированных поединков"
-                    emptyAction={canManage ? <ButtonLink href={hrefFor("matches")}>Создать поединок</ButtonLink> : undefined}
+                    emptyAction={canManage && !finished ? <ButtonLink href={hrefFor("matches")}>Создать поединок</ButtonLink> : undefined}
                   />
                 ) : (
                   <Loading />
@@ -243,7 +244,20 @@ export function TournamentDetailPage() {
               </Card>
               <ResultsCard matches={completed.slice(0, 5)} more={completed.length > 5 ? hrefFor("results") : undefined} />
             </Stack>
-            {canManage ? (
+            {finished ? (
+              <Card title="Турнир завершён" subtitle={`Завершено поединков: ${completed.length} из ${all.length}`}>
+                <p className={styles.muted}>
+                  {all.length > completed.length
+                    ? "Часть поединков не завершена: откройте их во вкладке «Поединки», чтобы завершить или отменить."
+                    : "Все поединки завершены. Итоги — во вкладке «Результаты»."}
+                </p>
+                <FormActions>
+                  <ButtonLink href={hrefFor("results")} variant="primary">
+                    Результаты
+                  </ButtonLink>
+                </FormActions>
+              </Card>
+            ) : canManage ? (
               <Card title="Следующие шаги" subtitle="Что осталось подготовить к проведению">
                 <ol className={styles.steps}>
                   {steps.map((s) => (
