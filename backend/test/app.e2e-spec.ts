@@ -352,4 +352,118 @@ describe.skipIf(!TEST_DB)('FightScore MVP scenario (PostgreSQL)', () => {
     await audit.end();
     expect(actions).toEqual(expect.arrayContaining(['auth.login', 'tournament.create', 'match.create', 'match.officials', 'display.assign']));
   });
+
+  const ruleDef = {
+    periods: { count: 3, durationSec: 180 },
+    scoring: [{ code: 's1', label: '+1', points: 1 }],
+    penalties: [{ code: 'w1', label: 'Замечание', public: true, opponentPoints: 0 }],
+    endMethods: [{ code: 'points', label: 'По очкам', requiresWinner: true }],
+    roles: { chief_judge: ['score', 'penalty', 'timer', 'period', 'correct', 'end', 'confirm'], judge: ['score'] },
+    timeAdjust: { maxSec: 30 },
+  };
+
+  it('lets an organizer create, edit and publish rule profiles; approved versions stay immutable and bound to matches', async () => {
+    const list = await as('org').get('/rule-profiles');
+    expect(list.status).toBe(200);
+    expect(list.body.abilities).toEqual({ manageAll: true, create: true, approveOfficial: false });
+
+    const broken = { ...ruleDef, roles: { chief_judge: ['score', 'timer', 'end'], judge: [] } };
+    expect((await as('org').post('/rule-profiles', { name: 'Без подтверждения', disciplineId: fx.mma, definition: broken })).status).toBe(400);
+    expect((await as('judge').post('/rule-profiles', { name: 'Судейский', disciplineId: fx.mma, definition: ruleDef })).status).toBe(403);
+
+    const created = await as('org').post('/rule-profiles', { name: 'Клубный профиль', description: 'Для тренировочных турниров', disciplineId: fx.mma, definition: ruleDef });
+    expect(created.status, JSON.stringify(created.body)).toBe(201);
+    const { id: profileId, versionId: v1 } = created.body;
+    const edited = await as('org').put(`/rule-versions/${v1}`, { definition: { ...ruleDef, periods: { count: 2, durationSec: 120 } }, changeSummary: 'Два раунда' });
+    expect(edited.status, JSON.stringify(edited.body)).toBe(200);
+    expect((await as('org').post(`/rule-versions/${v1}/publish`)).status).toBe(201);
+    expect((await as('org').put(`/rule-versions/${v1}`, { definition: ruleDef })).status).toBe(409);
+    expect((await api().delete(`/api/rule-versions/${v1}`).set(H).set('Cookie', cookies.org)).status).toBe(409);
+
+    const t = await as('org').post('/tournaments', { name: 'Rules Cup', startsOn: '2026-10-18', endsOn: '2026-10-18', disciplineIds: [fx.mma] });
+    const m = await as('org').post(`/tournaments/${t.body.id}/matches`, { disciplineId: fx.mma, ruleVersionId: v1 });
+    expect(m.status, JSON.stringify(m.body)).toBe(201);
+
+    const v2 = await as('org').post(`/rule-profiles/${profileId}/versions`, {});
+    expect(v2.status, JSON.stringify(v2.body)).toBe(201);
+    expect(v2.body.versionNumber).toBe(2);
+    expect((await as('org').post(`/rule-profiles/${profileId}/versions`, {})).status).toBe(409);
+    expect((await as('org').post(`/rule-versions/${v2.body.id}/publish`)).status).toBe(201);
+    expect((await as('org').post(`/rule-versions/${v1}/archive`)).status).toBe(201);
+    const snap = await as('org').get(`/matches/${m.body.id}`);
+    expect(snap.body.rules).toMatchObject({ versionId: v1, versionNumber: 1 });
+    expect((await as('org').post(`/tournaments/${t.body.id}/matches`, { disciplineId: fx.mma, ruleVersionId: v1 })).status).toBe(400);
+
+    const detail = await as('org').get(`/rule-profiles/${profileId}`);
+    expect(detail.body.versions.map((v: any) => [v.version_number, v.status, v.matches_count])).toEqual([
+      [2, 'approved', 0],
+      [1, 'archived', 1],
+    ]);
+
+    const official = await as('org').post('/rule-profiles', {
+      name: 'Официальный регламент',
+      disciplineId: fx.mma,
+      official: true,
+      source: { title: 'Регламент', edition: '2026' },
+      definition: ruleDef,
+    });
+    expect(official.status).toBe(201);
+    const denied = await as('org').post(`/rule-versions/${official.body.versionId}/publish`);
+    expect(denied.status).toBe(403);
+    expect(denied.body.details).toEqual({ permission: 'rules.approve' });
+
+    expect((await as('org').post(`/rule-profiles/${profileId}/archive`)).status).toBe(201);
+    expect((await as('org').post(`/rule-profiles/${profileId}/versions`, {})).status).toBe(409);
+  });
+
+  it('keeps self-registered organizers rule profiles private and copies as non-official drafts', async () => {
+    const reg = await api().post('/api/auth/register').set(H).send({ login: 'rules.self', displayName: 'Rules Self', password: PASSWORD });
+    expect(reg.status).toBe(201);
+    const self = reg.headers['set-cookie'][0].split(';')[0];
+    const asSelf = {
+      get: (p: string) => api().get(`/api${p}`).set('Cookie', self),
+      post: (p: string, body: object = {}) => api().post(`/api${p}`).set(H).set('Cookie', self).send(body),
+    };
+    expect((await asSelf.get('/rule-profiles')).body.abilities).toEqual({ manageAll: false, create: true, approveOfficial: false });
+    expect((await asSelf.post('/rule-profiles', { name: 'Мой официальный', disciplineId: fx.mma, official: true, definition: ruleDef })).status).toBe(403);
+    const mine = await asSelf.post('/rule-profiles', { name: 'Мой профиль', disciplineId: fx.mma, definition: ruleDef });
+    expect(mine.status, JSON.stringify(mine.body)).toBe(201);
+    expect((await asSelf.post(`/rule-versions/${mine.body.versionId}/publish`)).status).toBe(201);
+
+    const seen = (who: string) => as(who).get('/rule-profiles').then((r) => r.body.profiles.some((p: any) => p.id === mine.body.id));
+    expect(await seen('judge')).toBe(false);
+    expect(await seen('org')).toBe(true);
+    expect((await as('judge').get(`/rule-profiles/${mine.body.id}`)).status).toBe(404);
+    expect((await as('judge').get('/rule-versions')).body.some((v: any) => v.id === mine.body.versionId)).toBe(false);
+
+    const fixtureProfile = (await as('org').get('/rule-versions')).body.find((v: any) => v.id === fx.ruleVersionId).profile_id;
+    const copy = await asSelf.post(`/rule-profiles/${fixtureProfile}/duplicate`, {});
+    expect(copy.status, JSON.stringify(copy.body)).toBe(201);
+    const copied = await asSelf.get(`/rule-profiles/${copy.body.id}`);
+    expect(copied.body).toMatchObject({ visibility: 'private', name: 'Копия: E2E fixture' });
+    expect(copied.body.versions[0]).toMatchObject({ status: 'draft', is_demo: true, version_number: 1 });
+    expect((await asSelf.post(`/rule-profiles/${fixtureProfile}/archive`)).status).toBe(403);
+  });
+
+  it('lets a user rename themselves and change the password, revoking their other sessions', async () => {
+    const reg = await api().post('/api/auth/register').set(H).send({ login: 'acct.user', displayName: 'Acct', password: PASSWORD });
+    const a = reg.headers['set-cookie'][0].split(';')[0];
+    const second = await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: PASSWORD });
+    const b = second.headers['set-cookie'][0].split(';')[0];
+
+    const renamed = await api().put('/api/auth/me').set(H).set('Cookie', a).send({ displayName: 'Новое имя', roles: ['owner'] });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.user.displayName).toBe('Новое имя');
+    expect(renamed.body.roles.map((r: any) => r.code)).toEqual(['organizer_self']);
+
+    const wrong = await api().post('/api/auth/password').set(H).set('Cookie', a).send({ currentPassword: 'not-it-123', newPassword: 'brand-new-pass-1' });
+    expect(wrong.status).toBe(400);
+    const ok = await api().post('/api/auth/password').set(H).set('Cookie', a).send({ currentPassword: PASSWORD, newPassword: 'brand-new-pass-1' });
+    expect(ok.status, JSON.stringify(ok.body)).toBe(200);
+    expect(ok.body.revokedSessions).toBe(1);
+    expect((await api().get('/api/auth/me').set('Cookie', a)).status).toBe(200);
+    expect((await api().get('/api/auth/me').set('Cookie', b)).status).toBe(401);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: PASSWORD })).status).toBe(401);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: 'brand-new-pass-1' })).status).toBe(200);
+  });
 });

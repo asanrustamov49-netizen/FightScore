@@ -51,6 +51,9 @@ export interface TournamentSummary {
   athletes_count: number;
   matches_count: number;
   live_count: number;
+  completed_count: number;
+  disciplines: string | null;
+  can_manage: boolean;
 }
 
 export interface TournamentEntry {
@@ -65,7 +68,7 @@ export interface TournamentEntry {
   club_name: string | null;
 }
 
-export interface TournamentDetail extends Omit<TournamentSummary, "athletes_count" | "matches_count" | "live_count"> {
+export interface TournamentDetail extends Omit<TournamentSummary, "athletes_count" | "matches_count" | "live_count" | "completed_count" | "disciplines" | "can_manage"> {
   disciplines: Discipline[];
   athletes: TournamentEntry[];
   canManage: boolean;
@@ -110,8 +113,76 @@ export interface RuleVersion {
   change_summary: string | null;
   profile_id: string;
   profile_name: string;
+  profile_archived_at?: string | null;
   discipline_id: string;
   discipline_name: string;
+}
+
+export interface RuleAbilities {
+  manageAll: boolean;
+  create: boolean;
+  approveOfficial: boolean;
+}
+
+export interface RuleVersionSummary {
+  id: string;
+  version_number: number;
+  status: RuleVersion["status"];
+  is_demo: boolean;
+  effective_from: string | null;
+  source_title: string | null;
+  source_edition: string | null;
+}
+
+export interface RuleProfileSummary {
+  id: string;
+  name: string;
+  description: string | null;
+  visibility: "shared" | "private";
+  archived_at: string | null;
+  created_at: string;
+  discipline_id: string;
+  discipline_name: string;
+  author_name: string | null;
+  versions: RuleVersionSummary[];
+  matches_count: number;
+  can_edit: boolean;
+}
+
+export interface RuleVersionDetail {
+  id: string;
+  version_number: number;
+  status: RuleVersion["status"];
+  is_demo: boolean;
+  engine: string;
+  engine_version: number;
+  definition: RuleDefinition;
+  source_title: string | null;
+  source_edition: string | null;
+  source_url: string | null;
+  source_published_on: string | null;
+  effective_from: string | null;
+  change_summary: string | null;
+  created_at: string;
+  approved_at: string | null;
+  created_by_name: string | null;
+  approved_by_name: string | null;
+  matches_count: number;
+}
+
+export interface RuleProfileDetail {
+  id: string;
+  name: string;
+  description: string | null;
+  visibility: "shared" | "private";
+  archived_at: string | null;
+  created_at: string;
+  discipline_id: string;
+  discipline_name: string;
+  author_name: string | null;
+  versions: RuleVersionDetail[];
+  can_edit: boolean;
+  abilities: RuleAbilities;
 }
 
 export interface Participant {

@@ -44,17 +44,25 @@ export class TournamentsController {
 
   @Get('tournaments')
   async list(@CurrentUser() user: SessionUser) {
-    const visible = await this.access.visibleTournamentIds(user.id);
-    return this.db.query(
+    const [visible, grants] = await Promise.all([this.access.visibleTournamentIds(user.id), this.access.grants(user.id)]);
+    const manage = grants.filter((g) => g.permission === 'tournament.manage');
+    const manageAll = manage.some((g) => g.scope_type === 'system');
+    const managed = manage.map((g) => g.tournament_id).filter((id): id is string => !!id);
+    const rows = await this.db.query(
       `SELECT t.id, t.name, t.starts_on, t.ends_on, t.venue, t.status, t.archived_at,
+              (SELECT string_agg(d.name, ', ' ORDER BY d.name) FROM tournament_disciplines td JOIN disciplines d ON d.id = td.discipline_id
+                WHERE td.tournament_id = t.id) AS disciplines,
               (SELECT count(*) FROM tournament_athletes ta WHERE ta.tournament_id = t.id)::int AS athletes_count,
               (SELECT count(*) FROM matches m WHERE m.tournament_id = t.id)::int AS matches_count,
+              (SELECT count(*) FROM matches m WHERE m.tournament_id = t.id AND m.status = 'completed')::int AS completed_count,
               (SELECT count(*) FROM matches m WHERE m.tournament_id = t.id AND m.status IN ('live','awaiting_confirmation'))::int AS live_count
          FROM tournaments t
         WHERE ($1::uuid[] IS NULL OR t.id = ANY($1))
         ORDER BY t.archived_at NULLS FIRST, t.starts_on DESC`,
       [visible],
     );
+    // UI hint only: every management request is still checked by access.require.
+    return rows.map((t) => ({ ...t, can_manage: manageAll || managed.includes(t.id) }));
   }
 
   @Get('tournaments/:id')

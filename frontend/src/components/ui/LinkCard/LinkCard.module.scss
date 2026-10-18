@@ -1,0 +1,138 @@
+@use "../../../styles/mixins" as *;
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  min-width: 0;
+  padding: var(--fs-card-pad);
+  background: var(--fs-surface);
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius);
+  box-shadow: var(--fs-shadow-sm);
+  cursor: pointer;
+  transition:
+    border-color 0.15s var(--fs-ease),
+    transform 0.15s var(--fs-ease),
+    box-shadow 0.15s var(--fs-ease),
+    background-color 0.15s var(--fs-ease);
+
+  &:hover {
+    border-color: var(--fs-border-strong);
+    background: var(--fs-surface-hover);
+    box-shadow: var(--fs-shadow);
+    transform: translateY(-1px);
+  }
+
+  // The whole card shows focus when its link is focused from the keyboard.
+  &:has(.link:focus-visible) {
+    outline: 2px solid var(--fs-focus);
+    outline-offset: 2px;
+  }
+}
+
+.red {
+  box-shadow: inset 4px 0 0 var(--fs-red), var(--fs-shadow-sm);
+}
+
+.blue {
+  box-shadow: inset 4px 0 0 var(--fs-blue), var(--fs-shadow-sm);
+}
+
+.live {
+  box-shadow: inset 4px 0 0 var(--fs-red-strong), var(--fs-shadow-sm);
+}
+
+.muted {
+  opacity: 0.8;
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.titles {
+  min-width: 0;
+}
+
+.eyebrow {
+  @include label-caps;
+  margin-bottom: 0.25rem;
+}
+
+.title {
+  font-size: 1.08rem;
+  overflow-wrap: anywhere;
+}
+
+.link {
+  color: var(--fs-text);
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  // Stretched over the whole card.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex: none;
+  max-width: 55%;
+}
+
+.body {
+  color: var(--fs-text-muted);
+  font-size: 0.9rem;
+  min-width: 0;
+}
+
+.actions {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--fs-row-border);
+  cursor: default;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(4.5rem, 1fr));
+  gap: 0.75rem;
+  margin: 0;
+
+  dt {
+    @include label-caps;
+    font-size: 0.66rem;
+  }
+
+  dd {
+    margin: 0.15rem 0 0;
+    color: var(--fs-text);
+    font-family: var(--fs-font-display);
+    font-size: 1.15rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+  }
+}

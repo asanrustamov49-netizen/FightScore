@@ -16,6 +16,7 @@ import { DisplaysService } from './modules/displays/displays.service.js';
 import { MatchesController } from './modules/matches/matches.controller.js';
 import { MatchesService } from './modules/matches/matches.service.js';
 import { PublicGateway, RealtimeGateway } from './modules/realtime/realtime.gateway.js';
+import { RulesController } from './modules/rules/rules.controller.js';
 import { ScoringController } from './modules/scoring/scoring.controller.js';
 import { ScoringService } from './modules/scoring/scoring.service.js';
 import { TournamentsController } from './modules/tournaments/tournaments.controller.js';
@@ -35,6 +36,7 @@ import { UsersController } from './modules/users/users.controller.js';
     MatchesController,
     ScoringController,
     DisplaysController,
+    RulesController,
   ],
   providers: [
     { provide: APP_CONFIG, useFactory: () => loadConfig() },

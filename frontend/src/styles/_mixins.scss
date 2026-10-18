@@ -26,3 +26,31 @@ $bp-lg: 1200px;
   text-transform: uppercase;
   color: var(--fs-text-muted);
 }
+
+// Background variants (data-bg). Used for the page layer in globals.scss and for previews in settings.
+@mixin bg($name) {
+  @if $name == corners {
+    background:
+      radial-gradient(60rem 40rem at -10% -10%, var(--fs-glow-red), transparent 60%),
+      radial-gradient(60rem 40rem at 110% 110%, var(--fs-glow-blue), transparent 60%);
+  } @else if $name == ring {
+    background-image:
+      linear-gradient(var(--fs-pattern) 1px, transparent 1px),
+      linear-gradient(90deg, var(--fs-pattern) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at 50% 30%, #000 30%, transparent 85%);
+  } @else if $name == mat {
+    background-image:
+      linear-gradient(90deg, var(--fs-pattern) 2px, transparent 2px),
+      linear-gradient(var(--fs-pattern) 2px, transparent 2px),
+      linear-gradient(90deg, transparent 50%, var(--fs-pattern) 50%);
+    background-size:
+      192px 96px,
+      192px 96px,
+      384px 192px;
+  } @else if $name == octagon {
+    background-color: var(--fs-pattern);
+    -webkit-mask: url("/backgrounds/octagon.svg") 0 0 / 120px 120px repeat;
+    mask: url("/backgrounds/octagon.svg") 0 0 / 120px 120px repeat;
+  }
+}

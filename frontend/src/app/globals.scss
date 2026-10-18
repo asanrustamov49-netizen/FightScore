@@ -1,37 +1,132 @@
+@use "../styles/mixins" as *;
+
 // Design tokens. Fonts are system stacks so the app needs no network access (PROJECT_SPEC §6).
+// Themes are switched by data-* attributes on <html>, set before first paint (app/layout.tsx, lib/preferences.tsx).
+
 :root {
-  --fs-bg: #07101f;
-  --fs-bg-raised: #0d1a30;
-  --fs-surface: #12223d;
-  --fs-surface-2: #182c4d;
-  --fs-border: #24395e;
-  --fs-border-strong: #34507f;
-  --fs-text: #eef3fb;
-  --fs-text-muted: #95a6c2;
-  --fs-text-faint: #6c7f9f;
-
-  --fs-red: #e5333f;
-  --fs-red-strong: #ff4553;
-  --fs-red-soft: rgba(229, 51, 63, 0.14);
-  --fs-blue: #2f6bff;
-  --fs-blue-strong: #4d84ff;
-  --fs-blue-soft: rgba(47, 107, 255, 0.14);
-  --fs-accent: #f2b33d;
-  --fs-success: #2fbf71;
-  --fs-warning: #f2b33d;
-  --fs-danger: #ff5c5c;
-  --fs-focus: #8fb4ff;
-
-  --fs-radius-sm: 6px;
-  --fs-radius: 10px;
-  --fs-radius-lg: 16px;
-  --fs-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --fs-radius-sm: 8px;
+  --fs-radius: 12px;
+  --fs-radius-lg: 18px;
 
   --fs-font: "Segoe UI", "Inter", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --fs-font-display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
   --fs-font-mono: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", monospace;
 
+  // Density (data-density="compact" tightens them).
+  --fs-gap: 1.25rem;
+  --fs-card-pad: 1.25rem;
+  --fs-cell-pad-y: 0.75rem;
+  --fs-cell-pad-x: 1rem;
+  --fs-control-pad-y: 0.6rem;
+
+  --fs-ease: cubic-bezier(0.2, 0, 0, 1);
+  --fs-on-accent: #fff;
+}
+
+// Dark: the default broadcast look (PROJECT_SPEC §14). Also usable on any element (TV display).
+:root,
+[data-theme="dark"] {
   color-scheme: dark;
+  --fs-bg: #07101f;
+  --fs-bg-raised: #0b1628;
+  --fs-surface: #101e35;
+  --fs-surface-2: #172a47;
+  --fs-surface-hover: #15253f;
+  --fs-border: #213657;
+  --fs-border-strong: #33507d;
+  --fs-text: #eef3fb;
+  --fs-text-muted: #9cadc8;
+  --fs-text-faint: #6f83a3;
+
+  --fs-red: #e5333f;
+  --fs-red-strong: #ff4d5a;
+  --fs-red-soft: rgba(229, 51, 63, 0.15);
+  --fs-blue: #2f6bff;
+  --fs-blue-strong: #5b8cff;
+  --fs-blue-soft: rgba(47, 107, 255, 0.16);
+  --fs-accent: #f2b33d;
+  --fs-success: #35c97a;
+  --fs-warning: #f2b33d;
+  --fs-danger: #ff6464;
+  --fs-focus: #8fb4ff;
+
+  --fs-success-soft: rgba(47, 191, 113, 0.14);
+  --fs-warning-soft: rgba(242, 179, 61, 0.14);
+  --fs-danger-soft: rgba(255, 92, 92, 0.12);
+  --fs-info-text: #cddcff;
+  --fs-success-text: #b9f0d1;
+  --fs-warning-text: #ffe2a8;
+  --fs-danger-text: #ffc4c4;
+  --fs-info-border: rgba(91, 140, 255, 0.45);
+  --fs-success-border: rgba(53, 201, 122, 0.45);
+  --fs-warning-border: rgba(242, 179, 61, 0.45);
+  --fs-danger-border: rgba(255, 100, 100, 0.45);
+
+  --fs-row-border: rgba(33, 54, 87, 0.7);
+  --fs-header-bg: rgba(7, 16, 31, 0.86);
+  --fs-backdrop: rgba(3, 8, 18, 0.7);
+  --fs-pattern: rgba(143, 180, 255, 0.075);
+  --fs-glow-red: rgba(229, 51, 63, 0.16);
+  --fs-glow-blue: rgba(47, 107, 255, 0.18);
+  --fs-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
+  --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --fs-ring: 0 0 0 3px rgba(143, 180, 255, 0.28);
+}
+
+[data-theme="light"] {
+  color-scheme: light;
+  --fs-bg: #eef2f8;
+  --fs-bg-raised: #f7f9fc;
+  --fs-surface: #ffffff;
+  --fs-surface-2: #eef2f8;
+  --fs-surface-hover: #f3f6fb;
+  --fs-border: #d9e1ed;
+  --fs-border-strong: #b9c6da;
+  --fs-text: #0f1a2c;
+  --fs-text-muted: #4a5871;
+  --fs-text-faint: #6f7d94;
+
+  --fs-red: #d42a37;
+  --fs-red-strong: #b81f2b;
+  --fs-red-soft: rgba(212, 42, 55, 0.1);
+  --fs-blue: #2457e6;
+  --fs-blue-strong: #1b44bd;
+  --fs-blue-soft: rgba(36, 87, 230, 0.1);
+  --fs-accent: #9a6400;
+  --fs-success: #16804a;
+  --fs-warning: #9a6400;
+  --fs-danger: #c62f2f;
+  --fs-focus: #2457e6;
+
+  --fs-success-soft: rgba(22, 128, 74, 0.1);
+  --fs-warning-soft: rgba(196, 128, 0, 0.12);
+  --fs-danger-soft: rgba(198, 47, 47, 0.08);
+  --fs-info-text: #183a99;
+  --fs-success-text: #0f5e35;
+  --fs-warning-text: #6e4700;
+  --fs-danger-text: #8f1f1f;
+  --fs-info-border: rgba(36, 87, 230, 0.35);
+  --fs-success-border: rgba(22, 128, 74, 0.35);
+  --fs-warning-border: rgba(196, 128, 0, 0.4);
+  --fs-danger-border: rgba(198, 47, 47, 0.35);
+
+  --fs-row-border: #e6ebf3;
+  --fs-header-bg: rgba(247, 249, 252, 0.88);
+  --fs-backdrop: rgba(15, 26, 44, 0.45);
+  --fs-pattern: rgba(20, 45, 95, 0.07);
+  --fs-glow-red: rgba(212, 42, 55, 0.1);
+  --fs-glow-blue: rgba(36, 87, 230, 0.12);
+  --fs-shadow: 0 12px 30px rgba(15, 26, 44, 0.12);
+  --fs-shadow-sm: 0 1px 2px rgba(15, 26, 44, 0.08);
+  --fs-ring: 0 0 0 3px rgba(36, 87, 230, 0.22);
+}
+
+[data-density="compact"] {
+  --fs-gap: 0.9rem;
+  --fs-card-pad: 0.95rem;
+  --fs-cell-pad-y: 0.45rem;
+  --fs-cell-pad-x: 0.75rem;
+  --fs-control-pad-y: 0.45rem;
 }
 
 *,
@@ -53,6 +148,25 @@ body {
   font-size: 15px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  isolation: isolate;
+  transition:
+    background-color 0.2s var(--fs-ease),
+    color 0.2s var(--fs-ease);
+}
+
+// Background variants: a fixed layer under the content. Cards and panels stay opaque, so text keeps its contrast.
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+@each $name in corners, ring, mat, octagon {
+  [data-bg="#{$name}"] body::before {
+    @include bg($name);
+  }
 }
 
 a {
@@ -106,4 +220,24 @@ textarea {
   overflow: hidden;
   clip: rect(0 0 0 0);
   white-space: nowrap;
+}
+
+// Reduced motion: explicit choice in settings, or the OS setting when the choice is "system".
+[data-motion="reduce"] *,
+[data-motion="reduce"] *::before,
+[data-motion="reduce"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-motion="system"] *,
+  [data-motion="system"] *::before,
+  [data-motion="system"] *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

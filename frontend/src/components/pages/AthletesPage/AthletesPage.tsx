@@ -4,10 +4,11 @@ import { useState } from "react";
 import { Button } from "@/src/components/ui/Button/Button";
 import { Card } from "@/src/components/ui/Card/Card";
 import { Flag } from "@/src/components/ui/Flag/Flag";
-import { Field, Input } from "@/src/components/ui/Form/Form";
+import { SearchField } from "@/src/components/ui/Form/Form";
 import { Empty, ErrorState, Loading } from "@/src/components/ui/Notice/Notice";
 import { PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
 import { Table, tableStyles } from "@/src/components/ui/Table/Table";
+import { useToast } from "@/src/components/ui/Toast/Toast";
 import { AthleteForm, athleteToInput } from "@/src/components/widgets/AthleteForm/AthleteForm";
 import { api } from "@/src/lib/api";
 import { formatDate, personName } from "@/src/lib/format";
@@ -17,6 +18,7 @@ import { useResource } from "@/src/lib/use-resource";
 
 export function AthletesPage() {
   const { can, me } = useSession();
+  const toast = useToast();
   const [query, setQuery] = useState("");
   const list = useResource<Athlete[]>("/athletes");
   const countries = useResource<Country[]>("/countries");
@@ -28,7 +30,6 @@ export function AthletesPage() {
   return (
     <>
       <PageHeader
-        eyebrow="База"
         title="Спортсмены"
         description="Имя, страна, клуб и год рождения. Дополнительные персональные данные не собираются."
         actions={canCreate && editing === null && <Button variant="primary" onClick={() => setEditing("new")}>Добавить спортсмена</Button>}
@@ -45,21 +46,26 @@ export function AthletesPage() {
               onSubmit={async (v) => {
                 if (editing === "new") await api.post("/athletes", v);
                 else await api.put(`/athletes/${editing.id}`, v);
+                toast(editing === "new" ? "Спортсмен добавлен в базу" : "Изменения сохранены");
                 setEditing(null);
                 await list.reload();
               }}
             />
           </Card>
         )}
-        <Card flush title={`Всего: ${list.data?.length ?? 0}`} actions={
-          <Field label="Поиск">{(id) => <Input id={id} placeholder="Фамилия, имя или клуб" value={query} onChange={(e) => setQuery(e.target.value)} />}</Field>
-        }>
+        <Card flush title={`Всего: ${list.data?.length ?? 0}`} actions={<SearchField label="Поиск по фамилии, имени или клубу" placeholder="Фамилия, имя или клуб" value={query} onChange={setQuery} />}>
           {list.loading ? (
             <Loading />
           ) : list.error ? (
             <ErrorState message={list.error} onRetry={list.reload} />
           ) : !visible.length ? (
-            <Empty title={q ? "Никого не найдено" : "Спортсменов пока нет"} />
+            <Empty
+              icon={q ? "search" : "users"}
+              title={q ? "Никого не найдено" : "Спортсменов пока нет"}
+              action={!q && canCreate && editing === null ? <Button variant="primary" onClick={() => setEditing("new")}>Добавить спортсмена</Button> : undefined}
+            >
+              {q ? "Измените запрос." : "Добавьте спортсменов в базу, затем зарегистрируйте их в турнире на его странице."}
+            </Empty>
           ) : (
             <Table
               head={

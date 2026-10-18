@@ -1,0 +1,136 @@
+@use "../../../styles/mixins" as *;
+
+.layout {
+  display: grid;
+  gap: var(--fs-gap);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+
+  @media (min-width: 1200px) {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+.main,
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fs-gap);
+  min-width: 0;
+}
+
+.side {
+  @media (min-width: 1200px) {
+    order: 2;
+  }
+
+  @media (max-width: 1199px) {
+    order: -1;
+  }
+}
+
+.versionHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+
+  h2 {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 1.15rem;
+  }
+}
+
+.versionActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.muted {
+  margin: 0.35rem 0 0;
+  color: var(--fs-text-muted);
+  font-size: 0.9rem;
+}
+
+.source {
+  margin: 1rem 0 0;
+  font-size: 0.9rem;
+}
+
+.facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
+  gap: 0.9rem;
+  margin: 1.1rem 0 0;
+
+  dt {
+    @include label-caps;
+    font-size: 0.66rem;
+  }
+
+  dd {
+    margin: 0.2rem 0 0;
+    font-size: 0.92rem;
+  }
+}
+
+.versions {
+  margin: 0;
+  padding: 0.35rem;
+  list-style: none;
+}
+
+.versionRow {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+  padding: 0.6rem 0.7rem;
+  border: 1px solid transparent;
+  border-radius: var(--fs-radius-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fs-surface-hover);
+  }
+
+  small {
+    color: var(--fs-text-muted);
+    font-size: 0.78rem;
+  }
+}
+
+.current {
+  background: var(--fs-blue-soft);
+  border-color: var(--fs-info-border);
+}
+
+.versionNum {
+  font-family: var(--fs-font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  min-width: 2.2rem;
+}
+
+.versionInfo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.2rem;
+}
+
+.howto {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: var(--fs-text-muted);
+  font-size: 0.9rem;
+}

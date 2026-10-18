@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { DemoBadge } from "@/src/components/ui/Badge/Badge";
 import { Button } from "@/src/components/ui/Button/Button";
@@ -33,7 +34,8 @@ export function MatchSetupForm({ disciplines, entries, ruleVersions, initial, su
   );
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const versions = ruleVersions.filter((r) => r.discipline_id === v.disciplineId && r.status === "approved");
+  // Only approved versions of active profiles can be bound to a new match (the server checks this too).
+  const versions = ruleVersions.filter((r) => r.discipline_id === v.disciplineId && r.status === "approved" && (!r.profile_archived_at || r.id === initial?.ruleVersionId));
   const selected = ruleVersions.find((r) => r.id === v.ruleVersionId);
   const active = entries.filter((e) => e.status === "registered");
 
@@ -74,7 +76,7 @@ export function MatchSetupForm({ disciplines, entries, ruleVersions, initial, su
             </Select>
           )}
         </Field>
-        <Field label="Версия правил" hint={versions.length ? undefined : "Для этой дисциплины нет утверждённых профилей правил"}>
+        <Field label="Версия правил" hint={versions.length ? "Поединок навсегда сохранит выбранную версию" : "Для этой дисциплины нет опубликованных профилей правил"}>
           {(id) => (
             <Select id={id} value={v.ruleVersionId ?? ""} onChange={(e) => setV({ ...v, ruleVersionId: e.target.value || null })}>
               <option value="">— выбрать позже —</option>
@@ -104,9 +106,14 @@ export function MatchSetupForm({ disciplines, entries, ruleVersions, initial, su
           )}
         </Field>
       </FormGrid>
+      {!versions.length && (
+        <Notice tone="warning">
+          Без правил поединок нельзя отметить готовым к старту. <Link href="/rules/new">Создайте профиль правил</Link> для этой дисциплины и опубликуйте его.
+        </Notice>
+      )}
       {selected?.is_demo && (
         <Notice tone="warning">
-          <DemoBadge /> Выбран демонстрационный профиль. Его значения условны и не являются официальным регламентом.
+          <DemoBadge /> Выбран неофициальный профиль (демонстрационный или собственный). Он не является регламентом федерации.
         </Notice>
       )}
       <FormActions>

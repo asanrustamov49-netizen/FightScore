@@ -1,12 +1,92 @@
+@use "../../../styles/mixins" as *;
+
 .register {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 1rem 1.25rem;
+  padding: var(--fs-card-pad);
   border-bottom: 1px solid var(--fs-border);
 }
 
 .sub {
   color: var(--fs-text-muted);
   font-size: 0.82rem;
+}
+
+.muted {
+  margin: 0;
+  color: var(--fs-text-muted);
+}
+
+.danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--fs-danger-border);
+  border-radius: var(--fs-radius-sm);
+  background: var(--fs-danger-soft);
+
+  p {
+    margin: 0.2rem 0 0;
+    color: var(--fs-text-muted);
+    font-size: 0.88rem;
+  }
+}
+
+.steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: start;
+    gap: 0.75rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--fs-row-border);
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+}
+
+.stepMark {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 0.1rem;
+  border-radius: 50%;
+  border: 2px solid var(--fs-border-strong);
+  color: var(--fs-on-accent);
+}
+
+.stepDone .stepMark {
+  background: var(--fs-success);
+  border-color: var(--fs-success);
+}
+
+.stepDone .stepText strong {
+  color: var(--fs-text-muted);
+}
+
+.stepText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+
+  span {
+    font-size: 0.86rem;
+    color: var(--fs-text-muted);
+  }
 }

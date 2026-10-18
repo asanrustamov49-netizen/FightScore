@@ -45,3 +45,16 @@ export function formatDateTime(iso: string | null | undefined): string {
 export function personName(p: { first_name: string; last_name: string } | null | undefined): string {
   return p ? `${p.last_name} ${p.first_name}` : "—";
 }
+
+export function dateRange(start: string, end: string): string {
+  return start === end ? formatDate(start) : `${formatDate(start)} — ${formatDate(end)}`;
+}
+
+/** Russian plural: plural(5, ["поединок", "поединка", "поединков"]). */
+export function plural(n: number, forms: [string, string, string]): string {
+  const m10 = n % 10;
+  const m100 = n % 100;
+  if (m10 === 1 && m100 !== 11) return forms[0];
+  if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) return forms[1];
+  return forms[2];
+}

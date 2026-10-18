@@ -1,4 +1,5 @@
-import { useId, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes } from "react";
+import { useId, type CSSProperties, type InputHTMLAttributes, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { Icon } from "../Icon/Icon";
 import styles from "./Form.module.scss";
 
 interface FieldProps {
@@ -23,6 +24,21 @@ export function Field({ label, hint, error, children }: FieldProps) {
 
 export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
   return <input {...props} className={[styles.control, props.className].filter(Boolean).join(" ")} />;
+}
+
+export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={[styles.control, styles.textarea, props.className].filter(Boolean).join(" ")} />;
+}
+
+/** Search input with an icon; the label is for screen readers (the placeholder says the same). */
+export function SearchField({ value, onChange, label, placeholder }: { value: string; onChange: (v: string) => void; label: string; placeholder?: string }) {
+  return (
+    <label className={styles.search}>
+      <Icon name="search" size={18} />
+      <span className="visually-hidden">{label}</span>
+      <input type="search" className={styles.control} placeholder={placeholder ?? label} value={value} onChange={(e) => onChange(e.target.value)} />
+    </label>
+  );
 }
 
 export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {

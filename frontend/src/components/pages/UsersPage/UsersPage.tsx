@@ -56,7 +56,7 @@ export function UsersPage() {
 
   return (
     <>
-      <PageHeader eyebrow="Администрирование" title="Пользователи" description="Локальные учётные записи работают без интернета." />
+      <PageHeader title="Пользователи" description="Локальные учётные записи работают без интернета." />
       <Stack>
         <Card title="Новый пользователь">
           <form onSubmit={submit} className={formClass}>
@@ -97,7 +97,7 @@ export function UsersPage() {
           ) : list.error ? (
             <ErrorState message={list.error} onRetry={list.reload} />
           ) : !list.data?.length ? (
-            <Empty title="Пользователей нет" />
+            <Empty icon="users" title="Пользователей нет" />
           ) : (
             <Table
               head={

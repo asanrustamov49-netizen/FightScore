@@ -41,7 +41,6 @@ export function DisplaysPage() {
   return (
     <>
       <PageHeader
-        eyebrow="Трансляция"
         title="Табло"
         description="Публичное табло открывается по ссылке без входа. Ссылка даёт только просмотр и не позволяет управлять поединком."
       />
@@ -85,7 +84,7 @@ export function DisplaysPage() {
           ) : displays.error ? (
             <ErrorState message={displays.error} onRetry={displays.reload} />
           ) : !displays.data?.length ? (
-            <Empty title="Табло ещё не созданы" />
+            <Empty icon="display" title="Табло ещё не созданы">Создайте табло выше: выберите турнир, затем назначьте поединок, который нужно показывать.</Empty>
           ) : (
             <Table
               head={

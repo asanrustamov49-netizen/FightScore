@@ -1,4 +1,7 @@
 .wrap {
+  // Positioned so absolutely placed children (screen-reader labels) are clipped by the scroll box
+  // instead of widening the page on phones.
+  position: relative;
   width: 100%;
   overflow-x: auto;
 }
@@ -9,9 +12,9 @@
   font-size: 0.92rem;
 
   th {
-    padding: 0.65rem 1rem;
+    padding: 0.65rem var(--fs-cell-pad-x);
     text-align: left;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
@@ -21,17 +24,59 @@
   }
 
   td {
-    padding: 0.7rem 1rem;
-    border-bottom: 1px solid rgba(36, 57, 94, 0.6);
+    padding: var(--fs-cell-pad-y) var(--fs-cell-pad-x);
+    border-bottom: 1px solid var(--fs-row-border);
     vertical-align: middle;
   }
 
+  tbody tr {
+    transition: background-color 0.12s var(--fs-ease);
+  }
+
   tbody tr:hover {
-    background: rgba(24, 44, 77, 0.55);
+    background: var(--fs-surface-hover);
   }
 
   tbody tr:last-child td {
     border-bottom: none;
+  }
+}
+
+.linkRow {
+  position: relative;
+  cursor: pointer;
+
+  &:focus-within {
+    outline: 2px solid var(--fs-focus);
+    outline-offset: -2px;
+  }
+
+  // Independent controls inside the row stay clickable above the stretched link.
+  a:not(.rowLink),
+  button,
+  select,
+  input {
+    position: relative;
+    z-index: 1;
+  }
+}
+
+.rowLink {
+  color: var(--fs-text);
+  font-weight: 650;
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
   }
 }
 
@@ -42,4 +87,9 @@
 
 .muted {
   color: var(--fs-text-muted);
+}
+
+.end {
+  text-align: right;
+  white-space: nowrap;
 }

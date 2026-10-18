@@ -46,7 +46,8 @@ export function DisplayPage() {
   const lost = status !== "online" && !!data;
 
   return (
-    <div className={styles.screen}>
+    // The TV board is always dark and high-contrast, whatever theme the operator chose (PROJECT_SPEC §14).
+    <div className={styles.screen} data-theme="dark">
       <header className={styles.head}>
         <div className={styles.headLeft}>
           <span>{data?.display.tournamentName ?? "FightScore"}</span>

@@ -23,12 +23,12 @@
 }
 
 .success {
-  background: rgba(47, 191, 113, 0.14);
+  background: var(--fs-success-soft);
   color: var(--fs-success);
 }
 
 .warning {
-  background: rgba(242, 179, 61, 0.15);
+  background: var(--fs-warning-soft);
   color: var(--fs-warning);
 }
 
@@ -39,22 +39,22 @@
 
 .live {
   background: var(--fs-red);
-  color: #fff;
+  color: var(--fs-on-accent);
 
   &::before {
     content: "";
     width: 0.45rem;
     height: 0.45rem;
     border-radius: 50%;
-    background: #fff;
+    background: currentColor;
     animation: pulse 1.2s ease-in-out infinite;
   }
 }
 
 .demo {
-  background: rgba(242, 179, 61, 0.15);
+  background: var(--fs-warning-soft);
   color: var(--fs-accent);
-  border-color: rgba(242, 179, 61, 0.45);
+  border-color: var(--fs-warning-border);
   text-transform: uppercase;
 }
 

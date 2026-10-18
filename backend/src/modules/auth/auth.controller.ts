@@ -1,4 +1,4 @@
-import { Body, Controller, Get, HttpCode, Inject, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Inject, Post, Put, Req, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { z } from 'zod';
 import { APP_CONFIG, type AppConfig } from '../../config/config.js';
@@ -15,6 +15,13 @@ const registerSchema = z.object({
   login: loginField,
   displayName: z.string().trim().min(1).max(120),
   password: z.string().min(MIN_PASSWORD_LENGTH, `Пароль не короче ${MIN_PASSWORD_LENGTH} символов`).max(200),
+});
+
+const profileSchema = z.object({ displayName: z.string().trim().min(1, 'Укажите имя').max(120) });
+
+const passwordSchema = z.object({
+  currentPassword: z.string().min(1, 'Укажите текущий пароль').max(200),
+  newPassword: z.string().min(MIN_PASSWORD_LENGTH, `Пароль не короче ${MIN_PASSWORD_LENGTH} символов`).max(200),
 });
 
 @Controller('auth')
@@ -63,6 +70,20 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: SessionUser) {
     return this.profile(user);
+  }
+
+  /** Own display name. Login and roles are not editable here: roles come only from an administrator or organizer. */
+  @Put('me')
+  async updateMe(@CurrentUser() user: SessionUser, @Body() body: unknown, @ClientIp() ip: string | null) {
+    const { displayName } = parse(profileSchema, body);
+    return this.profile(await this.auth.updateProfile(user, displayName, ip));
+  }
+
+  @Post('password')
+  @HttpCode(200)
+  async password(@CurrentUser() user: SessionUser, @Body() body: unknown, @Req() req: AuthedRequest, @ClientIp() ip: string | null) {
+    const { currentPassword, newPassword } = parse(passwordSchema, body);
+    return this.auth.changePassword(user, req.sessionToken, currentPassword, newPassword, ip);
   }
 
   /** One-time ticket for the realtime socket handshake. */

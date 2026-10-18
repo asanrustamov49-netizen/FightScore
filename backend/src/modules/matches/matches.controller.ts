@@ -39,18 +39,21 @@ export class MatchesController {
     private readonly matches: MatchesService,
   ) {}
 
+  /** Rule versions the user may see: shared profiles, their own private ones, or all for rule managers. */
   @Get('rule-versions')
-  ruleVersions(@Query('disciplineId') disciplineId?: string) {
+  async ruleVersions(@CurrentUser() user: SessionUser, @Query('disciplineId') disciplineId?: string) {
+    const manageAll = await this.access.can(user.id, 'rules.manage');
     return this.db.query(
       `SELECT v.id, v.version_number, v.status, v.is_demo, v.engine, v.engine_version, v.definition,
               v.source_title, v.source_edition, v.effective_from, v.change_summary,
-              p.id AS profile_id, p.name AS profile_name, d.id AS discipline_id, d.name AS discipline_name
+              p.id AS profile_id, p.name AS profile_name, p.archived_at AS profile_archived_at,
+              d.id AS discipline_id, d.name AS discipline_name
          FROM rule_profile_versions v
          JOIN rule_profiles p ON p.id = v.rule_profile_id
          JOIN disciplines d ON d.id = p.discipline_id
-        WHERE ($1::uuid IS NULL OR d.id = $1)
+        WHERE ($1::uuid IS NULL OR d.id = $1) AND (p.visibility = 'shared' OR p.created_by = $2 OR $3)
         ORDER BY d.name, p.name, v.version_number DESC`,
-      [disciplineId ? parse(uuid, disciplineId) : null],
+      [disciplineId ? parse(uuid, disciplineId) : null, user.id, manageAll],
     );
   }
 
@@ -119,7 +122,7 @@ export class MatchesController {
         [m.id],
         c,
       );
-      await this.applySetup(m.id, tournamentId, s, c);
+      await this.applySetup(m.id, tournamentId, s, user.id, c);
       await this.audit.record(
         { actorUserId: user.id, action: 'match.create', entityType: 'match', entityId: m.id, tournamentId, data: s, ip },
         c,
@@ -136,7 +139,7 @@ export class MatchesController {
       const row = await this.db.one(`SELECT status FROM matches WHERE id = $1 FOR UPDATE`, [id], c);
       if (row.status !== 'prepared') throw new AppError('INVALID_TRANSITION', 'Состав можно менять только у подготавливаемого поединка');
       await this.db.query(`UPDATE matches SET discipline_id = $2, scheduled_at = $3, updated_at = now() WHERE id = $1`, [id, s.disciplineId, s.scheduledAt ?? null], c);
-      await this.applySetup(id, m.tournament_id, s, c);
+      await this.applySetup(id, m.tournament_id, s, user.id, c);
       await this.audit.record(
         { actorUserId: user.id, action: 'match.setup', entityType: 'match', entityId: id, tournamentId: m.tournament_id, data: s, ip },
         c,
@@ -213,15 +216,24 @@ export class MatchesController {
     return m;
   }
 
-  private async applySetup(matchId: string, tournamentId: string, s: z.infer<typeof setupSchema>, c: Db) {
+  private async applySetup(matchId: string, tournamentId: string, s: z.infer<typeof setupSchema>, userId: string, c: Db) {
     if (s.ruleVersionId) {
       const v = await this.db.one(
-        `SELECT v.status, p.discipline_id FROM rule_profile_versions v JOIN rule_profiles p ON p.id = v.rule_profile_id WHERE v.id = $1`,
-        [s.ruleVersionId],
+        `SELECT v.status, p.discipline_id, p.archived_at, p.visibility, p.created_by,
+                (SELECT rule_profile_version_id FROM matches WHERE id = $2) AS current_version_id
+           FROM rule_profile_versions v JOIN rule_profiles p ON p.id = v.rule_profile_id WHERE v.id = $1`,
+        [s.ruleVersionId, matchId],
         c,
       );
       if (!v || v.status !== 'approved') throw new AppError('VALIDATION', 'Можно выбрать только утверждённую версию правил');
       if (v.discipline_id !== s.disciplineId) throw new AppError('VALIDATION', 'Версия правил относится к другой дисциплине');
+      // A newly chosen version must come from a profile the user may use; an already bound one stays valid.
+      if (v.current_version_id !== s.ruleVersionId) {
+        if (v.archived_at) throw new AppError('VALIDATION', 'Профиль правил в архиве и недоступен для новых поединков');
+        if (v.visibility !== 'shared' && v.created_by !== userId && !(await this.access.can(userId, 'rules.manage', null, c))) {
+          throw new AppError('VALIDATION', 'Эта версия правил вам недоступна');
+        }
+      }
     }
     await this.db.query(`UPDATE matches SET rule_profile_version_id = $2 WHERE id = $1`, [matchId, s.ruleVersionId ?? null], c);
     await this.db.query(`DELETE FROM match_participants WHERE match_id = $1`, [matchId], c);

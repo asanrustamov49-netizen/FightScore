@@ -8,6 +8,7 @@ export type Permission =
   | 'tournament.manage'
   | 'athlete.manage'
   | 'rules.manage'
+  | 'rules.create'
   | 'rules.approve'
   | 'display.operate'
   | 'audit.read'

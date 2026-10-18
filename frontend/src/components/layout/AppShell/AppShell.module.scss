@@ -3,26 +3,38 @@
 .shell {
   display: grid;
   min-height: 100vh;
-  grid-template-columns: 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr);
 
   @include up($bp-md) {
-    grid-template-columns: 240px 1fr;
-    grid-template-rows: auto 1fr auto;
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+}
+
+.skip {
+  position: absolute;
+  left: 1rem;
+  top: -3rem;
+  z-index: 70;
+  padding: 0.5rem 0.9rem;
+  background: var(--fs-blue);
+  color: var(--fs-on-accent);
+  border-radius: var(--fs-radius-sm);
+
+  &:focus {
+    top: 1rem;
   }
 }
 
 .sidebar {
   display: none;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1.25rem 1rem;
+  gap: 1.25rem;
+  padding: 1.1rem 0.85rem 0.85rem;
   background: var(--fs-bg-raised);
   border-right: 1px solid var(--fs-border);
 
   @include up($bp-md) {
     display: flex;
-    grid-row: 1 / span 3;
     position: sticky;
     top: 0;
     height: 100vh;
@@ -31,9 +43,31 @@
   &.open {
     display: flex;
     position: fixed;
-    inset: 0 30% 0 0;
-    z-index: 30;
+    inset: 0 auto 0 0;
+    width: min(300px, 86vw);
+    z-index: 40;
     box-shadow: var(--fs-shadow);
+    animation: slide 0.18s var(--fs-ease);
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateX(-100%);
+  }
+}
+
+.sidebarTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.4rem;
+}
+
+// Doubled class: wins over .iconButton { display: grid }, which comes later in this file.
+.closeButton.closeButton {
+  @include up($bp-md) {
+    display: none;
   }
 }
 
@@ -74,60 +108,106 @@
 .nav {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 1.1rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
 }
 
 .navLabel {
   @include label-caps;
-  padding: 0 0.75rem 0.4rem;
+  font-size: 0.66rem;
+  padding: 0 0.75rem 0.35rem;
+  color: var(--fs-text-faint);
 }
 
 .link {
-  display: block;
-  padding: 0.6rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.55rem 0.75rem;
   border-radius: var(--fs-radius-sm);
   color: var(--fs-text-muted);
-  font-weight: 550;
+  font-weight: 600;
+
+  svg {
+    flex: none;
+    color: var(--fs-text-faint);
+  }
 
   &:hover {
     background: var(--fs-surface);
     color: var(--fs-text);
     text-decoration: none;
+
+    svg {
+      color: var(--fs-text-muted);
+    }
   }
 }
 
 .active {
-  background: var(--fs-surface-2);
+  background: var(--fs-blue-soft);
   color: var(--fs-text);
   box-shadow: inset 3px 0 0 var(--fs-blue-strong);
-}
 
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1.25rem;
-  border-bottom: 1px solid var(--fs-border);
-  background: rgba(7, 16, 31, 0.92);
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  backdrop-filter: blur(6px);
-}
+  svg {
+    color: var(--fs-blue-strong);
+  }
 
-.menuButton {
-  @include up($bp-md) {
-    display: none;
+  &:hover svg {
+    color: var(--fs-blue-strong);
   }
 }
 
-.user {
+.account {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  margin-left: auto;
+  gap: 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--fs-border);
+}
+
+.accountLink {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex: 1;
   min-width: 0;
+  padding: 0.35rem 0.4rem;
+  border-radius: var(--fs-radius-sm);
+  color: var(--fs-text);
+
+  &:hover {
+    background: var(--fs-surface);
+    text-decoration: none;
+  }
+}
+
+.accountText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.1rem;
+  height: 2.1rem;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--fs-red), var(--fs-blue));
+  color: var(--fs-on-accent);
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .userName {
@@ -138,13 +218,121 @@
 }
 
 .userRole {
-  font-size: 0.78rem;
+  font-size: 0.75rem;
   color: var(--fs-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.iconButton {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.4rem;
+  height: 2.4rem;
+  border: 1px solid transparent;
+  border-radius: var(--fs-radius-sm);
+  background: transparent;
+  color: var(--fs-text-muted);
+  cursor: pointer;
+
+  &:hover {
+    background: var(--fs-surface);
+    border-color: var(--fs-border);
+    color: var(--fs-text);
+  }
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1.25rem;
+  border-bottom: 1px solid var(--fs-border);
+  background: var(--fs-header-bg);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(8px);
+
+  @include up($bp-md) {
+    padding: 0.6rem 2rem;
+  }
+}
+
+.menuButton {
+  @include up($bp-md) {
+    display: none;
+  }
+}
+
+.headerBrand {
+  @include up($bp-md) {
+    display: none;
+  }
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.headerUser {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.2rem 0.6rem 0.2rem 0.2rem;
+  border-radius: 999px;
+  color: var(--fs-text);
+  font-weight: 600;
+  font-size: 0.9rem;
+
+  &:hover {
+    background: var(--fs-surface);
+    text-decoration: none;
+  }
+
+  .avatar {
+    width: 1.9rem;
+    height: 1.9rem;
+  }
+}
+
+.headerUserName {
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @include down($bp-sm) {
+    display: none;
+  }
 }
 
 .main {
-  padding: 1.25rem;
+  flex: 1;
+  width: 100%;
+  max-width: 1440px;
+  padding: 1.25rem 1rem;
   min-width: 0;
+
+  &:focus {
+    outline: none;
+  }
+
+  @include up($bp-sm) {
+    padding: 1.5rem 1.25rem;
+  }
 
   @include up($bp-md) {
     padding: 2rem;
@@ -153,15 +341,15 @@
 
 .devBanner {
   padding: 0.4rem 1.25rem;
-  background: rgba(242, 179, 61, 0.12);
-  border-bottom: 1px solid rgba(242, 179, 61, 0.35);
-  color: var(--fs-warning);
+  background: var(--fs-warning-soft);
+  border-bottom: 1px solid var(--fs-warning-border);
+  color: var(--fs-warning-text);
   font-size: 0.82rem;
   text-align: center;
 }
 
 .footer {
-  padding: 1rem 1.25rem;
+  padding: 1rem 2rem;
   border-top: 1px solid var(--fs-border);
   font-size: 0.8rem;
   color: var(--fs-text-faint);
@@ -174,7 +362,7 @@
 .scrim {
   position: fixed;
   inset: 0;
-  z-index: 25;
-  background: rgba(3, 8, 18, 0.6);
+  z-index: 35;
+  background: var(--fs-backdrop);
   border: none;
 }

@@ -140,6 +140,43 @@ export class AuthService {
     if (user) await this.audit.record({ actorUserId: user.id, action: 'auth.logout', entityType: 'user', entityId: user.id, ip });
   }
 
+  async updateProfile(user: SessionUser, displayName: string, ip: string | null): Promise<SessionUser> {
+    await this.db.tx(async (c) => {
+      await this.db.query(`UPDATE users SET display_name = $2, updated_at = now() WHERE id = $1`, [user.id, displayName], c);
+      await this.audit.record({ actorUserId: user.id, action: 'auth.profile_update', entityType: 'user', entityId: user.id, data: { displayName }, ip }, c);
+    });
+    return { ...user, displayName };
+  }
+
+  /**
+   * Changes the own password after checking the current one. Other sessions are revoked so a stolen
+   * session cannot outlive the change; the current session stays signed in.
+   */
+  async changePassword(user: SessionUser, currentToken: string | undefined, current: string, next: string, ip: string | null) {
+    const key = `password|${user.id}`;
+    this.checkRate(key);
+    const row = await this.db.one(`SELECT password_hash FROM users WHERE id = $1`, [user.id]);
+    if (!row || !(await verifyPassword(current, row.password_hash))) {
+      this.failures.set(key, [...(this.failures.get(key) ?? []), Date.now()]);
+      throw new AppError('VALIDATION', 'Текущий пароль указан неверно', [{ path: 'currentPassword', message: 'Неверный пароль' }]);
+    }
+    if (current === next) throw new AppError('VALIDATION', 'Новый пароль совпадает с текущим', [{ path: 'newPassword', message: 'Придумайте другой пароль' }]);
+    const hash = await hashPassword(next);
+    const revoked = await this.db.tx(async (c) => {
+      await this.db.query(`UPDATE users SET password_hash = $2, updated_at = now() WHERE id = $1`, [user.id, hash], c);
+      const r = await this.db.query(
+        `UPDATE sessions SET revoked_at = now()
+          WHERE user_id = $1 AND revoked_at IS NULL AND ($2::bytea IS NULL OR token_hash <> $2) RETURNING id`,
+        [user.id, currentToken ? sha256(currentToken) : null],
+        c,
+      );
+      await this.audit.record({ actorUserId: user.id, action: 'auth.password_change', entityType: 'user', entityId: user.id, data: { revokedSessions: r.length }, ip }, c);
+      return r.length;
+    });
+    this.failures.delete(key);
+    return { revokedSessions: revoked };
+  }
+
   /** Single-use, short-lived ticket for the Socket.IO handshake (docs/ARCHITECTURE.md §9.2, question Ж). */
   issueTicket(userId: string): string {
     const now = Date.now();

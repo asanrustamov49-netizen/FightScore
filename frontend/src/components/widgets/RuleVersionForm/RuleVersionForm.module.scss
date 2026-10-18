@@ -1,0 +1,54 @@
+.layout {
+  display: grid;
+  gap: var(--fs-gap);
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+
+  @media (min-width: 1100px) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+}
+
+.main {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fs-gap);
+  min-width: 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fs-gap);
+
+  @media (min-width: 1100px) {
+    position: sticky;
+    top: 4.5rem;
+  }
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.kind {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.hint {
+  margin: 0;
+  color: var(--fs-text-muted);
+  font-size: 0.86rem;
+}
+
+.errors {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}

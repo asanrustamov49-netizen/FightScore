@@ -8,7 +8,7 @@
   box-shadow: var(--fs-shadow);
 
   &::backdrop {
-    background: rgba(3, 8, 18, 0.72);
+    background: var(--fs-backdrop);
   }
 }
 

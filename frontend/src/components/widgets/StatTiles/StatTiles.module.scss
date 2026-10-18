@@ -1,18 +1,33 @@
 .grid {
   display: grid;
-  gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--fs-gap);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
 }
 
 .tile {
-  padding: 1.1rem 1.25rem;
+  display: block;
+  padding: 1rem 1.15rem;
   background: var(--fs-surface);
   border: 1px solid var(--fs-border);
   border-radius: var(--fs-radius);
+  box-shadow: var(--fs-shadow-sm);
+  color: var(--fs-text);
+}
+
+.link {
+  transition:
+    border-color 0.15s var(--fs-ease),
+    background-color 0.15s var(--fs-ease);
+
+  &:hover {
+    border-color: var(--fs-border-strong);
+    background: var(--fs-surface-hover);
+    text-decoration: none;
+  }
 }
 
 .label {
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -22,7 +37,7 @@
 .value {
   margin-top: 0.3rem;
   font-family: var(--fs-font-display);
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 800;
   font-variant-numeric: tabular-nums;
   line-height: 1;

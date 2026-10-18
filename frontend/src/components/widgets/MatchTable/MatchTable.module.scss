@@ -50,9 +50,24 @@
   color: var(--fs-text-muted);
 }
 
-.actions {
-  display: flex;
-  gap: 0.4rem;
-  justify-content: flex-end;
-  flex-wrap: wrap;
+
+.judge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: var(--fs-radius-sm);
+  background: var(--fs-blue);
+  color: var(--fs-on-accent);
+  font-size: 0.82rem;
+  font-weight: 650;
+
+  &:hover {
+    background: var(--fs-blue-strong);
+    text-decoration: none;
+  }
+}
+
+.chevron {
+  color: var(--fs-text-faint);
 }

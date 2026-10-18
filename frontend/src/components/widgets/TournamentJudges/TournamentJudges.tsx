@@ -18,7 +18,7 @@ const EMPTY = { login: "", displayName: "", password: "", role: "judge" };
  * Judges of one tournament. Accounts created here exist only for this tournament: they cannot see
  * other tournaments and get no organizer rights. Give each judge their login and password in person.
  */
-export function TournamentJudges({ tournamentId }: { tournamentId: string }) {
+export function TournamentJudges({ tournamentId, onChange }: { tournamentId: string; onChange?: () => void }) {
   const list = useResource<OfficialCandidate[]>(`/tournaments/${tournamentId}/officials`);
   const [form, setForm] = useState(EMPTY);
   const [open, setOpen] = useState(false);
@@ -37,6 +37,7 @@ export function TournamentJudges({ tournamentId }: { tournamentId: string }) {
       setForm(EMPTY);
       setOpen(false);
       await list.reload();
+      onChange?.();
     } catch (err) {
       setError(errorText(err));
     } finally {
@@ -47,7 +48,7 @@ export function TournamentJudges({ tournamentId }: { tournamentId: string }) {
   return (
     <Card
       title="Судьи турнира"
-      subtitle="Назначаются на поединки в карточке поединка"
+      subtitle="Создайте учётные записи судей, затем назначьте их на поединки на странице поединка"
       actions={!open && <Button size="sm" variant="primary" onClick={() => setOpen(true)}>Добавить судью</Button>}
       flush
     >
@@ -89,7 +90,9 @@ export function TournamentJudges({ tournamentId }: { tournamentId: string }) {
       ) : list.error ? (
         <ErrorState message={list.error} onRetry={list.reload} />
       ) : !list.data?.length ? (
-        <Empty title="Судей пока нет">Добавьте хотя бы главного судью — без него поединок нельзя отметить готовым к старту.</Empty>
+        <Empty icon="judge" title="Судей пока нет" action={!open && <Button variant="primary" onClick={() => setOpen(true)}>Добавить судью</Button>}>
+          Добавьте хотя бы главного судью — без него поединок нельзя отметить готовым к старту.
+        </Empty>
       ) : (
         <Table
           head={

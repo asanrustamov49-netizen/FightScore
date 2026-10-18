@@ -1,0 +1,126 @@
+@use "../../../styles/mixins" as *;
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  min-width: 0;
+
+  &:disabled {
+    opacity: 0.75;
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+
+  header {
+    h3 {
+      font-size: 1rem;
+    }
+
+    p {
+      margin: 0.2rem 0 0;
+      color: var(--fs-text-muted);
+      font-size: 0.86rem;
+    }
+  }
+
+  & + & {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--fs-row-border);
+  }
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 0.6rem;
+
+  &:has(.checkCell) {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) auto auto;
+  }
+
+  @include down($bp-sm) {
+    grid-template-columns: 1fr auto;
+
+    &:has(.checkCell) {
+      grid-template-columns: 1fr auto;
+    }
+  }
+}
+
+.checkCell {
+  display: flex;
+  align-items: center;
+  min-height: 2.5rem;
+  white-space: nowrap;
+}
+
+.remove {
+  height: 2.5rem;
+}
+
+.add {
+  align-self: flex-start;
+}
+
+.empty {
+  margin: 0;
+  color: var(--fs-text-faint);
+  font-size: 0.88rem;
+}
+
+.matrix {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius-sm);
+  overflow: hidden;
+}
+
+.matrixHead,
+.matrixRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 7.5rem 5.5rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.85rem;
+
+  span:not(:first-child) {
+    text-align: center;
+  }
+}
+
+.matrixHead {
+  @include label-caps;
+  font-size: 0.66rem;
+  background: var(--fs-surface-2);
+}
+
+.matrixRow {
+  border-top: 1px solid var(--fs-row-border);
+
+  small {
+    color: var(--fs-text-faint);
+  }
+
+  input {
+    width: 1.1rem;
+    height: 1.1rem;
+    accent-color: var(--fs-blue);
+    cursor: pointer;
+  }
+}

@@ -1,18 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { Badge, TournamentStatusBadge } from "@/src/components/ui/Badge/Badge";
 import { ButtonLink } from "@/src/components/ui/Button/Button";
 import { Card } from "@/src/components/ui/Card/Card";
-import { FormActions } from "@/src/components/ui/Form/Form";
+import { Icon } from "@/src/components/ui/Icon/Icon";
+import { CardFacts, LinkCard } from "@/src/components/ui/LinkCard/LinkCard";
 import { Empty, ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
-import { BulletList, Columns, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
-import { Table } from "@/src/components/ui/Table/Table";
+import { CardGrid, Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
+import { LinkRow, RowLink, Table } from "@/src/components/ui/Table/Table";
 import { MatchTable } from "@/src/components/widgets/MatchTable/MatchTable";
 import { StatTiles } from "@/src/components/widgets/StatTiles/StatTiles";
-import { formatDateTime } from "@/src/lib/format";
+import { dateRange, formatDateTime } from "@/src/lib/format";
 import { useSession } from "@/src/lib/session";
 import type { DisplayItem, MatchListItem, Side, TournamentSummary } from "@/src/lib/types";
 import { useResource } from "@/src/lib/use-resource";
+import styles from "./DashboardPage.module.scss";
 
 interface ResultRow {
   id: string;
@@ -43,82 +46,141 @@ export function DashboardPage() {
   const upcoming = all.filter((m) => m.status === "ready" || m.status === "prepared");
   const mine = all.filter((m) => m.is_official && m.status !== "completed" && m.status !== "cancelled");
   const athletes = active.reduce((n, t) => n + t.athletes_count, 0);
+  const noRoles = me && !me.capabilities.organizer && !me.capabilities.judge && !me.capabilities.displays;
 
   return (
     <>
-      <PageHeader eyebrow="Обзор" title={`Здравствуйте, ${me?.user.displayName ?? ""}`} description="Текущее состояние соревнований" />
+      <PageHeader
+        title={`Здравствуйте, ${me?.user.displayName ?? ""}`}
+        description="Текущее состояние соревнований. Нажмите на карточку или строку, чтобы открыть подробности."
+        actions={
+          canCreate && (
+            <ButtonLink href="/tournaments?new=1" variant="primary">
+              <Icon name="plus" size={18} />
+              Новый турнир
+            </ButtonLink>
+          )
+        }
+      />
       <Stack>
-        {me && !me.capabilities.organizer && !me.capabilities.judge && !me.capabilities.displays && (
-          <Notice tone="info">
-            У вашей учётной записи пока нет ролей. Организатор турнира может назначить вас судьёй или оператором табло — после этого здесь
-            появятся ваши поединки.
+        {noRoles && (
+          <Notice tone="info" title="У вашей учётной записи пока нет ролей">
+            Организатор турнира может назначить вас судьёй или оператором табло — после этого здесь появятся ваши поединки.
           </Notice>
         )}
         {canCreate && (tournaments.data ?? []).length === 0 && (
-          <Card title="Начните с турнира" subtitle="Три шага до первого поединка">
-            <BulletList>
-              <li>Создайте турнир и выберите дисциплины.</li>
-              <li>Добавьте спортсменов и зарегистрируйте их в турнире, создайте учётные записи судей.</li>
-              <li>Создайте поединок, назначьте судей и выведите его на табло.</li>
-            </BulletList>
-            <FormActions>
-              <ButtonLink href="/tournaments?new=1" variant="primary">
-                Создать первый турнир
-              </ButtonLink>
-            </FormActions>
+          <Card>
+            <Empty
+              icon="trophy"
+              title="Начните с турнира"
+              action={
+                <>
+                  <ButtonLink href="/tournaments?new=1" variant="primary">
+                    Создать первый турнир
+                  </ButtonLink>
+                  <ButtonLink href="/rules">Посмотреть правила</ButtonLink>
+                </>
+              }
+            >
+              Создайте турнир и выберите дисциплины. Затем добавьте спортсменов, судей и поединки и выведите поединок на табло.
+            </Empty>
           </Card>
         )}
+
         <StatTiles
           items={[
-            { label: "Активные турниры", value: active.length },
-            { label: "Идут сейчас", value: live.length, live: live.length > 0 },
-            { label: "Ожидают старта", value: upcoming.length },
+            { label: "Активные турниры", value: active.length, href: "/tournaments" },
+            { label: "Идут сейчас", value: live.length, live: live.length > 0, href: "/matches?status=live" },
+            { label: "Ожидают старта", value: upcoming.length, href: "/matches?status=ready" },
             { label: "Спортсменов в турнирах", value: athletes },
           ]}
         />
+
         {mine.length > 0 && (
-          <Card title="Мои поединки как судьи" subtitle="Откройте судейскую панель, чтобы вести поединок">
+          <Card title="Мои поединки как судьи" subtitle="«Судейство» открывает панель управления поединком" flush>
             <MatchTable matches={mine} />
           </Card>
         )}
+
+        {active.length > 0 && (
+          <section className={styles.section} aria-labelledby="active-tournaments">
+            <div className={styles.sectionHead}>
+              <h2 id="active-tournaments">Активные турниры</h2>
+              <Link href="/tournaments">Все турниры</Link>
+            </div>
+            <CardGrid min={280}>
+              {active.slice(0, 6).map((t) => (
+                <LinkCard
+                  key={t.id}
+                  href={`/tournaments/${t.id}`}
+                  title={t.name}
+                  accent={t.live_count > 0 ? "live" : undefined}
+                  badges={
+                    <>
+                      <TournamentStatusBadge status={t.status} />
+                      {t.live_count > 0 && <Badge tone="live">{t.live_count} идёт</Badge>}
+                    </>
+                  }
+                >
+                  <div className={styles.meta}>
+                    <MetaItem icon="calendar">{dateRange(t.starts_on, t.ends_on)}</MetaItem>
+                    {t.venue && <MetaItem icon="pin">{t.venue}</MetaItem>}
+                  </div>
+                  <CardFacts
+                    items={[
+                      { label: "Участники", value: t.athletes_count },
+                      { label: "Поединки", value: t.matches_count },
+                    ]}
+                  />
+                </LinkCard>
+              ))}
+            </CardGrid>
+          </section>
+        )}
+
         <Columns>
           <Card title="Текущие и запланированные поединки" actions={<Link href="/matches">Все поединки</Link>} flush>
-            <MatchTable matches={[...live, ...upcoming].slice(0, 10)} emptyText="Нет текущих и запланированных поединков" />
+            <MatchTable
+              matches={[...live, ...upcoming].slice(0, 10)}
+              emptyText="Нет текущих и запланированных поединков"
+              emptyHint={canCreate ? "Поединки создаются на странице турнира во вкладке «Поединки»." : undefined}
+            />
           </Card>
-          <Stack>
-            <Card title="Активные турниры" actions={<Link href="/tournaments">Все</Link>}>
-              {active.length ? (
-                <BulletList>
-                  {active.map((t) => (
-                    <li key={t.id}>
-                      <Link href={`/tournaments/${t.id}`}>{t.name}</Link> — {t.matches_count} поед.
+          {me?.capabilities.displays ? (
+            <Card title="Табло" actions={<Link href="/displays">Управление</Link>} flush>
+              {displays.data?.length ? (
+                <ul className={styles.displays}>
+                  {displays.data.map((d) => (
+                    <li key={d.id}>
+                      <Icon name="display" size={20} />
+                      <div>
+                        <strong>{d.name}</strong>
+                        <span>{d.match_number ? `Показывает поединок №${d.match_number}` : "Поединок не выбран"}</span>
+                      </div>
                     </li>
                   ))}
-                </BulletList>
+                </ul>
               ) : (
-                <Empty title="Активных турниров нет" />
+                <Empty icon="display" title="Табло не настроены" action={<ButtonLink href="/displays">Создать табло</ButtonLink>}>
+                  Табло — публичная страница для ТВ, открывается по ссылке без входа.
+                </Empty>
               )}
             </Card>
-            {me?.capabilities.displays && (
-              <Card title="Табло" actions={<Link href="/displays">Управление</Link>}>
-                {displays.data?.length ? (
-                  <BulletList>
-                    {displays.data.map((d) => (
-                      <li key={d.id}>
-                        {d.name}: {d.match_number ? `поединок №${d.match_number}` : "поединок не выбран"}
-                      </li>
-                    ))}
-                  </BulletList>
-                ) : (
-                  <Empty title="Табло не настроены" />
-                )}
-              </Card>
-            )}
-          </Stack>
+          ) : (
+            <Card title="Как это работает">
+              <ol className={styles.howto}>
+                <li>Организатор создаёт турнир, участников и поединки.</li>
+                <li>Судья ведёт поединок в судейской панели — сервер подтверждает каждое действие.</li>
+                <li>Табло на ТВ обновляется само, без перезагрузки.</li>
+              </ol>
+            </Card>
+          )}
         </Columns>
+
         <Card title="Недавние результаты" flush>
           {results.data?.length ? (
             <Table
+              caption="Недавние результаты"
               head={
                 <tr>
                   <th>Поединок</th>
@@ -131,19 +193,22 @@ export function DashboardPage() {
               {results.data.slice(0, 8).map((r) => {
                 const w = r.participants_snapshot.find((p) => p.side === r.winner_side);
                 return (
-                  <tr key={r.id}>
+                  <LinkRow key={r.id}>
                     <td>
-                      <Link href={`/matches/${r.id}`}>№{r.match_number}</Link> · {r.tournament_name}
+                      <RowLink href={`/matches/${r.id}`}>№{r.match_number}</RowLink>
+                      <div className={styles.sub}>{r.tournament_name}</div>
                     </td>
                     <td>{w ? `${w.last_name} ${w.first_name}` : "—"}</td>
                     <td>{r.definition.endMethods.find((e) => e.code === r.outcome_code)?.label ?? r.outcome_code}</td>
                     <td>{formatDateTime(r.confirmed_at)}</td>
-                  </tr>
+                  </LinkRow>
                 );
               })}
             </Table>
           ) : (
-            <Empty title="Подтверждённых результатов пока нет" />
+            <Empty icon="trophy" title="Подтверждённых результатов пока нет">
+              Результат появляется после того, как главный судья подтвердит итог поединка.
+            </Empty>
           )}
         </Card>
       </Stack>

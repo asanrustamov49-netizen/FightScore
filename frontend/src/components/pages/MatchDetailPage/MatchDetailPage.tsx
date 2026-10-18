@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { DemoBadge, MatchStatusBadge } from "@/src/components/ui/Badge/Badge";
@@ -10,7 +9,7 @@ import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Flag } from "@/src/components/ui/Flag/Flag";
 import { Field, Input } from "@/src/components/ui/Form/Form";
 import { ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
-import { Columns, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
+import { Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
 import { Table } from "@/src/components/ui/Table/Table";
 import { EventLog } from "@/src/components/widgets/EventLog/EventLog";
 import { MatchSetupForm } from "@/src/components/widgets/MatchSetupForm/MatchSetupForm";
@@ -76,14 +75,22 @@ export function MatchDetailPage() {
   return (
     <>
       <PageHeader
-        eyebrow={<Link href={`/tournaments/${m.tournament.id}`}>{m.tournament.name}</Link>}
+        breadcrumbs={[
+          { label: "Турниры", href: "/tournaments" },
+          { label: m.tournament.name, href: `/tournaments/${m.tournament.id}?tab=matches` },
+        ]}
         title={
           <>
             Поединок №{m.matchNumber} <MatchStatusBadge status={m.status} />
             {m.rules?.isDemo && <DemoBadge />}
           </>
         }
-        description={`${m.discipline.name}${m.rules ? ` · ${m.rules.profileName}, версия ${m.rules.versionNumber}` : " · правила не выбраны"}`}
+        meta={
+          <>
+            <MetaItem icon="versus">{m.discipline.name}</MetaItem>
+            <MetaItem icon="book">{m.rules ? `${m.rules.profileName}, версия ${m.rules.versionNumber}` : "Правила не выбраны"}</MetaItem>
+          </>
+        }
         actions={
           <>
             {canJudge && (
@@ -107,6 +114,12 @@ export function MatchDetailPage() {
       <Stack>
         {error && <Notice tone="error">{error}</Notice>}
         {m.status === "cancelled" && <Notice tone="warning">Поединок отменён. Причина: {m.cancelReason}</Notice>}
+        {canManage && m.status === "prepared" && (
+          <Notice tone="info" title="Подготовка поединка">
+            Выберите спортсменов и версию правил, назначьте главного судью, затем нажмите «Готов к старту». После этого состав и правила
+            фиксируются.
+          </Notice>
+        )}
         {m.status === "completed" && m.result && (
           <Notice tone="success">
             Результат подтверждён {formatDateTime(m.result.confirmed_at)} ({m.result.confirmed_by}):{" "}

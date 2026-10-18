@@ -18,7 +18,7 @@
 
 .online .dot {
   background: var(--fs-success);
-  box-shadow: 0 0 0 3px rgba(47, 191, 113, 0.25);
+  box-shadow: 0 0 0 3px var(--fs-success-border);
 }
 
 .connecting .dot {

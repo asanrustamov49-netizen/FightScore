@@ -13,7 +13,7 @@
 
 .control {
   width: 100%;
-  padding: 0.6rem 0.75rem;
+  padding: var(--fs-control-pad-y) 0.75rem;
   background: var(--fs-bg-raised);
   border: 1px solid var(--fs-border);
   border-radius: var(--fs-radius-sm);
@@ -26,7 +26,7 @@
   &:focus {
     outline: none;
     border-color: var(--fs-focus);
-    box-shadow: 0 0 0 3px rgba(143, 180, 255, 0.2);
+    box-shadow: var(--fs-ring);
   }
 
   &[aria-invalid="true"] {
@@ -63,7 +63,7 @@ select.control {
 .grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 
   @include up($bp-sm) {
     grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr));
@@ -112,4 +112,29 @@ select.control {
 
 .inset {
   padding: 1rem 1.25rem;
+}
+
+.textarea {
+  min-height: 5.5rem;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+.search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 16rem;
+  max-width: 24rem;
+
+  svg {
+    position: absolute;
+    left: 0.7rem;
+    color: var(--fs-text-faint);
+    pointer-events: none;
+  }
+
+  input {
+    padding-left: 2.2rem;
+  }
 }

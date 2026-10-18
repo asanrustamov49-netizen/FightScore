@@ -13,7 +13,7 @@ interface Props {
 
 /** Confirmed events, newest first. Voided events stay visible, struck through (PROJECT_SPEC §11). */
 export function EventLog({ events, definition, height, action }: Props) {
-  if (!events.length) return <Empty title="Событий пока нет" />;
+  if (!events.length) return <Empty title="Событий пока нет">Журнал заполняется по мере судейства: каждое подтверждённое действие записывается сюда.</Empty>;
   return (
     <ol className={styles.list} style={height ? ({ "--log-height": `${height}px` } as CSSProperties) : undefined} aria-label="Журнал событий">
       {events.map((e) => {
