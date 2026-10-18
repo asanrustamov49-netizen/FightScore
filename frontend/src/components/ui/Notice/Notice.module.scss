@@ -1,11 +1,15 @@
+@use "../../../styles/mixins" as *;
+
 .notice {
   display: flex;
-  gap: 0.65rem;
+  gap: 0.75rem;
   align-items: flex-start;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.05rem;
   border-radius: var(--fs-radius-sm);
   border: 1px solid;
   font-size: 0.9rem;
+  line-height: 1.5;
+  animation: fs-enter var(--fs-dur) var(--fs-ease-out);
 }
 
 .noticeIcon {
@@ -53,15 +57,17 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 2.5rem 1rem;
+  gap: 0.65rem;
+  padding: 2.75rem 1.25rem;
+  animation: fs-fade var(--fs-dur-slow) var(--fs-ease);
   text-align: center;
   color: var(--fs-text-muted);
 }
 
 .stateTitle {
+  font-family: var(--fs-font-display);
   font-weight: 700;
-  font-size: 1.02rem;
+  font-size: 1.12rem;
   color: var(--fs-text);
 }
 
@@ -79,18 +85,48 @@
 }
 
 .stateIcon {
-  display: grid;
-  place-items: center;
-  width: 3.25rem;
-  height: 3.25rem;
-  border-radius: 50%;
-  background: var(--fs-blue-soft);
-  color: var(--fs-blue-strong);
+  @include icon-tile(3.5rem);
+  margin-bottom: 0.35rem;
+  box-shadow:
+    inset 0 0 0 1px var(--fs-info-border),
+    0 0 0 8px color-mix(in srgb, var(--fs-blue-soft) 45%, transparent);
 }
 
 .stateIconError {
   background: var(--fs-danger-soft);
   color: var(--fs-danger);
+  box-shadow:
+    inset 0 0 0 1px var(--fs-danger-border),
+    0 0 0 8px color-mix(in srgb, var(--fs-danger-soft) 45%, transparent);
+}
+
+.skeletonPage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fs-gap);
+}
+
+.skeletonHead {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-bottom: 0.5rem;
+}
+
+.skeletonGrid {
+  display: grid;
+  gap: var(--fs-gap);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+}
+
+.skeletonCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: var(--fs-card-pad);
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius);
+  background: var(--fs-surface);
 }
 
 .spinner {

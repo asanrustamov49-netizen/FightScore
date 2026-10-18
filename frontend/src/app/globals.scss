@@ -4,22 +4,43 @@
 // Themes are switched by data-* attributes on <html>, set before first paint (app/layout.tsx, lib/preferences.tsx).
 
 :root {
-  --fs-radius-sm: 8px;
-  --fs-radius: 12px;
-  --fs-radius-lg: 18px;
+  --fs-radius-xs: 6px;
+  --fs-radius-sm: 10px;
+  --fs-radius: 14px;
+  --fs-radius-lg: 20px;
+  --fs-radius-xl: 28px;
 
-  --fs-font: "Segoe UI", "Inter", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
-  --fs-font-display: "Bahnschrift", "DIN Alternate", "Arial Narrow", "Segoe UI", system-ui, sans-serif;
+  --fs-font: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --fs-font-display: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
   --fs-font-mono: ui-monospace, "Cascadia Mono", "Consolas", "SF Mono", monospace;
+
+  // Type scale.
+  --fs-text-xs: 0.75rem;
+  --fs-text-sm: 0.875rem;
+  --fs-text-md: 0.95rem;
+  --fs-text-lg: 1.125rem;
+  --fs-title-sm: 1.05rem;
+  --fs-title: 1.3rem;
+  --fs-title-lg: clamp(1.6rem, 1.2rem + 1.4vw, 2.15rem);
 
   // Density (data-density="compact" tightens them).
   --fs-gap: 1.25rem;
-  --fs-card-pad: 1.25rem;
-  --fs-cell-pad-y: 0.75rem;
-  --fs-cell-pad-x: 1rem;
-  --fs-control-pad-y: 0.6rem;
+  --fs-card-pad: 1.35rem;
+  --fs-cell-pad-y: 0.8rem;
+  --fs-cell-pad-x: 1.1rem;
+  --fs-control-pad-y: 0.65rem;
+  --fs-control-h: 2.75rem;
+  --fs-control-h-sm: 2.25rem;
+  --fs-control-pad-x: 0.9rem;
 
+  // Motion. Durations collapse to ~0 under reduced motion (rules at the end of this file).
   --fs-ease: cubic-bezier(0.2, 0, 0, 1);
+  --fs-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --fs-ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --fs-dur-fast: 120ms;
+  --fs-dur: 200ms;
+  --fs-dur-slow: 360ms;
+
   --fs-on-accent: #fff;
 }
 
@@ -27,28 +48,34 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --fs-bg: #07101f;
-  --fs-bg-raised: #0b1628;
-  --fs-surface: #101e35;
-  --fs-surface-2: #172a47;
-  --fs-surface-hover: #15253f;
-  --fs-border: #213657;
-  --fs-border-strong: #33507d;
-  --fs-text: #eef3fb;
-  --fs-text-muted: #9cadc8;
-  --fs-text-faint: #6f83a3;
+  --fs-bg: #050a15;
+  --fs-bg-raised: #08101f;
+  --fs-surface: #0d1729;
+  --fs-surface-2: #14213a;
+  --fs-surface-hover: #122038;
+  --fs-surface-glass: rgba(13, 23, 41, 0.72);
+  --fs-border: #1b2a45;
+  --fs-border-strong: #2b4069;
+  --fs-text: #eef3fc;
+  --fs-text-muted: #9badc9;
+  --fs-text-faint: #6b7f9f;
 
   --fs-red: #e5333f;
   --fs-red-strong: #ff4d5a;
   --fs-red-soft: rgba(229, 51, 63, 0.15);
   --fs-blue: #2f6bff;
-  --fs-blue-strong: #5b8cff;
-  --fs-blue-soft: rgba(47, 107, 255, 0.16);
+  --fs-blue-strong: #6b97ff;
+  --fs-blue-soft: rgba(47, 107, 255, 0.15);
+  --fs-cyan: #3fd0ff;
   --fs-accent: #f2b33d;
   --fs-success: #35c97a;
   --fs-warning: #f2b33d;
   --fs-danger: #ff6464;
-  --fs-focus: #8fb4ff;
+  --fs-focus: #7ea6ff;
+
+  --fs-primary-grad: linear-gradient(180deg, #4a82ff 0%, #2a62f2 100%);
+  --fs-primary-grad-hover: linear-gradient(180deg, #5a8eff 0%, #336cff 100%);
+  --fs-brand-grad: linear-gradient(120deg, #3fd0ff 0%, #2f6bff 55%, #7b5cff 100%);
 
   --fs-success-soft: rgba(47, 191, 113, 0.14);
   --fs-warning-soft: rgba(242, 179, 61, 0.14);
@@ -62,41 +89,52 @@
   --fs-warning-border: rgba(242, 179, 61, 0.45);
   --fs-danger-border: rgba(255, 100, 100, 0.45);
 
-  --fs-row-border: rgba(33, 54, 87, 0.7);
-  --fs-header-bg: rgba(7, 16, 31, 0.86);
-  --fs-backdrop: rgba(3, 8, 18, 0.7);
-  --fs-pattern: rgba(143, 180, 255, 0.075);
-  --fs-glow-red: rgba(229, 51, 63, 0.16);
-  --fs-glow-blue: rgba(47, 107, 255, 0.18);
-  --fs-shadow: 0 12px 32px rgba(0, 0, 0, 0.38);
-  --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --fs-ring: 0 0 0 3px rgba(143, 180, 255, 0.28);
+  --fs-row-border: rgba(27, 42, 69, 0.85);
+  --fs-header-bg: rgba(5, 10, 21, 0.78);
+  --fs-backdrop: rgba(2, 6, 14, 0.72);
+  --fs-pattern: rgba(143, 180, 255, 0.07);
+  --fs-glow-red: rgba(229, 51, 63, 0.13);
+  --fs-glow-blue: rgba(47, 107, 255, 0.2);
+  --fs-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+  --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
+  --fs-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
+  --fs-shadow-lg: 0 30px 70px -20px rgba(0, 0, 0, 0.7), 0 8px 20px -6px rgba(0, 0, 0, 0.35);
+  --fs-shadow-primary: 0 8px 22px -8px rgba(47, 107, 255, 0.75);
+  --fs-ring: 0 0 0 4px rgba(126, 166, 255, 0.22);
+  --fs-skeleton: rgba(143, 180, 255, 0.07);
+  --fs-skeleton-shine: rgba(143, 180, 255, 0.14);
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --fs-bg: #eef2f8;
-  --fs-bg-raised: #f7f9fc;
+  --fs-bg: #f3f6fb;
+  --fs-bg-raised: #f8fafd;
   --fs-surface: #ffffff;
   --fs-surface-2: #eef2f8;
-  --fs-surface-hover: #f3f6fb;
-  --fs-border: #d9e1ed;
-  --fs-border-strong: #b9c6da;
-  --fs-text: #0f1a2c;
-  --fs-text-muted: #4a5871;
-  --fs-text-faint: #6f7d94;
+  --fs-surface-hover: #f5f8fc;
+  --fs-surface-glass: rgba(255, 255, 255, 0.78);
+  --fs-border: #e0e6f0;
+  --fs-border-strong: #c3cfe1;
+  --fs-text: #0b1528;
+  --fs-text-muted: #4a5873;
+  --fs-text-faint: #6c7a92;
 
   --fs-red: #d42a37;
   --fs-red-strong: #b81f2b;
   --fs-red-soft: rgba(212, 42, 55, 0.1);
   --fs-blue: #2457e6;
-  --fs-blue-strong: #1b44bd;
-  --fs-blue-soft: rgba(36, 87, 230, 0.1);
+  --fs-blue-strong: #1c48c9;
+  --fs-blue-soft: rgba(36, 87, 230, 0.09);
+  --fs-cyan: #0a8fc2;
   --fs-accent: #9a6400;
   --fs-success: #16804a;
   --fs-warning: #9a6400;
   --fs-danger: #c62f2f;
   --fs-focus: #2457e6;
+
+  --fs-primary-grad: linear-gradient(180deg, #3a6cf2 0%, #2353de 100%);
+  --fs-primary-grad-hover: linear-gradient(180deg, #2f62ea 0%, #1c48c9 100%);
+  --fs-brand-grad: linear-gradient(120deg, #0a8fc2 0%, #2457e6 55%, #6a45e8 100%);
 
   --fs-success-soft: rgba(22, 128, 74, 0.1);
   --fs-warning-soft: rgba(196, 128, 0, 0.12);
@@ -110,23 +148,31 @@
   --fs-warning-border: rgba(196, 128, 0, 0.4);
   --fs-danger-border: rgba(198, 47, 47, 0.35);
 
-  --fs-row-border: #e6ebf3;
-  --fs-header-bg: rgba(247, 249, 252, 0.88);
-  --fs-backdrop: rgba(15, 26, 44, 0.45);
-  --fs-pattern: rgba(20, 45, 95, 0.07);
-  --fs-glow-red: rgba(212, 42, 55, 0.1);
-  --fs-glow-blue: rgba(36, 87, 230, 0.12);
-  --fs-shadow: 0 12px 30px rgba(15, 26, 44, 0.12);
-  --fs-shadow-sm: 0 1px 2px rgba(15, 26, 44, 0.08);
-  --fs-ring: 0 0 0 3px rgba(36, 87, 230, 0.22);
+  --fs-row-border: #e8edf4;
+  --fs-header-bg: rgba(248, 250, 253, 0.82);
+  --fs-backdrop: rgba(11, 21, 40, 0.42);
+  --fs-pattern: rgba(20, 45, 95, 0.06);
+  --fs-glow-red: rgba(212, 42, 55, 0.07);
+  --fs-glow-blue: rgba(36, 87, 230, 0.1);
+  --fs-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --fs-shadow-sm: 0 1px 2px rgba(15, 26, 44, 0.06), 0 1px 1px rgba(15, 26, 44, 0.04);
+  --fs-shadow: 0 10px 28px -10px rgba(15, 26, 44, 0.16), 0 2px 6px rgba(15, 26, 44, 0.05);
+  --fs-shadow-lg: 0 30px 60px -20px rgba(15, 26, 44, 0.25), 0 8px 18px -6px rgba(15, 26, 44, 0.08);
+  --fs-shadow-primary: 0 8px 20px -8px rgba(36, 87, 230, 0.55);
+  --fs-ring: 0 0 0 4px rgba(36, 87, 230, 0.16);
+  --fs-skeleton: rgba(20, 45, 95, 0.06);
+  --fs-skeleton-shine: rgba(20, 45, 95, 0.11);
 }
 
 [data-density="compact"] {
   --fs-gap: 0.9rem;
-  --fs-card-pad: 0.95rem;
-  --fs-cell-pad-y: 0.45rem;
-  --fs-cell-pad-x: 0.75rem;
+  --fs-card-pad: 1rem;
+  --fs-cell-pad-y: 0.5rem;
+  --fs-cell-pad-x: 0.8rem;
   --fs-control-pad-y: 0.45rem;
+  --fs-control-h: 2.4rem;
+  --fs-control-h-sm: 2rem;
+  --fs-control-pad-x: 0.75rem;
 }
 
 *,
@@ -141,17 +187,29 @@ body {
   min-height: 100%;
 }
 
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
 body {
   background: var(--fs-bg);
   color: var(--fs-text);
   font-family: var(--fs-font);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   isolation: isolate;
   transition:
-    background-color 0.2s var(--fs-ease),
-    color 0.2s var(--fs-ease);
+    background-color var(--fs-dur) var(--fs-ease),
+    color var(--fs-dur) var(--fs-ease);
+}
+
+::selection {
+  background: var(--fs-blue-soft);
+  color: var(--fs-text);
 }
 
 // Background variants: a fixed layer under the content. Cards and panels stay opaque, so text keeps its contrast.
@@ -172,6 +230,8 @@ body::before {
 a {
   color: var(--fs-blue-strong);
   text-decoration: none;
+  text-underline-offset: 0.2em;
+  transition: color var(--fs-dur-fast) var(--fs-ease);
 
   &:hover {
     text-decoration: underline;
@@ -184,20 +244,27 @@ h3 {
   margin: 0;
   font-family: var(--fs-font-display);
   font-weight: 700;
-  letter-spacing: 0.01em;
+  letter-spacing: -0.005em;
   line-height: 1.2;
+  text-wrap: balance;
 }
 
 h1 {
-  font-size: 1.75rem;
+  font-size: var(--fs-title-lg);
+  letter-spacing: -0.015em;
+  line-height: 1.12;
 }
 
 h2 {
-  font-size: 1.2rem;
+  font-size: var(--fs-title-sm);
 }
 
 h3 {
   font-size: 1rem;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 button,
@@ -213,6 +280,11 @@ textarea {
   outline-offset: 2px;
 }
 
+// Thin, theme-aware scrollbars.
+* {
+  scrollbar-color: var(--fs-border-strong) transparent;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -222,11 +294,53 @@ textarea {
   white-space: nowrap;
 }
 
+// Shared motion. Only transform and opacity are animated; content is never hidden from the start
+// for longer than the animation, and reduced motion removes it (below).
+@keyframes fs-enter {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+@keyframes fs-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fs-pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.97);
+  }
+}
+
+@keyframes fs-shimmer {
+  from {
+    background-position: 150% 0;
+  }
+
+  to {
+    background-position: -50% 0;
+  }
+}
+
+// Skeleton placeholder (lists while loading).
+.fs-skeleton {
+  display: block;
+  border-radius: var(--fs-radius-xs);
+  background: linear-gradient(90deg, var(--fs-skeleton) 25%, var(--fs-skeleton-shine) 50%, var(--fs-skeleton) 75%);
+  background-size: 200% 100%;
+  animation: fs-shimmer 1.4s linear infinite;
+}
+
 // Reduced motion: explicit choice in settings, or the OS setting when the choice is "system".
 [data-motion="reduce"] *,
 [data-motion="reduce"] *::before,
 [data-motion="reduce"] *::after {
   animation-duration: 0.001ms !important;
+  animation-delay: 0s !important;
   animation-iteration-count: 1 !important;
   transition-duration: 0.001ms !important;
   scroll-behavior: auto !important;
@@ -237,7 +351,9 @@ textarea {
   [data-motion="system"] *::before,
   [data-motion="system"] *::after {
     animation-duration: 0.001ms !important;
+    animation-delay: 0s !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
   }
 }

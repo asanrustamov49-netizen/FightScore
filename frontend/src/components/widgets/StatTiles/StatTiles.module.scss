@@ -1,48 +1,94 @@
 .grid {
   display: grid;
   gap: var(--fs-gap);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
 }
 
 .tile {
-  display: block;
-  padding: 1rem 1.15rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  padding: 1.05rem 1.2rem 1.1rem;
   background: var(--fs-surface);
   border: 1px solid var(--fs-border);
   border-radius: var(--fs-radius);
-  box-shadow: var(--fs-shadow-sm);
+  box-shadow: var(--fs-highlight), var(--fs-shadow-sm);
   color: var(--fs-text);
+  overflow: hidden;
 }
 
 .link {
   transition:
-    border-color 0.15s var(--fs-ease),
-    background-color 0.15s var(--fs-ease);
+    border-color var(--fs-dur) var(--fs-ease),
+    transform var(--fs-dur) var(--fs-ease-out),
+    box-shadow var(--fs-dur) var(--fs-ease);
 
   &:hover {
     border-color: var(--fs-border-strong);
-    background: var(--fs-surface-hover);
+    box-shadow: var(--fs-highlight), var(--fs-shadow);
+    transform: translateY(-2px);
     text-decoration: none;
+
+    .arrow {
+      opacity: 1;
+      transform: none;
+    }
   }
 }
 
 .label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  font-size: 0.8rem;
+  font-weight: 600;
   color: var(--fs-text-muted);
+  padding-right: 1.25rem;
 }
 
 .value {
-  margin-top: 0.3rem;
   font-family: var(--fs-font-display);
-  font-size: 2rem;
-  font-weight: 800;
+  font-size: 2.1rem;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
   line-height: 1;
+  letter-spacing: -0.01em;
 }
 
-.live .value {
-  color: var(--fs-red-strong);
+.arrow {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  color: var(--fs-text-faint);
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity var(--fs-dur) var(--fs-ease),
+    transform var(--fs-dur) var(--fs-ease-out);
+}
+
+.live {
+  border-color: var(--fs-danger-border);
+  background: radial-gradient(120% 90% at 100% 0%, var(--fs-red-soft), transparent 60%), var(--fs-surface);
+
+  .value {
+    color: var(--fs-red-strong);
+  }
+}
+
+.compact {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 105px), 1fr));
+  gap: 0.75rem;
+
+  .tile {
+    gap: 0.3rem;
+    padding: 0.8rem 1rem;
+  }
+
+  .value {
+    font-size: 1.6rem;
+  }
+
+  .arrow {
+    top: 0.8rem;
+    right: 0.8rem;
+  }
 }

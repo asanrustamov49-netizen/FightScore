@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { Button } from "../Button/Button";
 import styles from "./Dialog.module.scss";
 
@@ -17,8 +17,19 @@ interface Props {
 }
 
 /** Native <dialog>: focus trap and Esc handling come from the browser. Used for dangerous actions. */
-export function ConfirmDialog({ open, title, children, confirmLabel = "Подтвердить", confirmVariant = "primary", confirmDisabled, busy, onConfirm, onClose }: Props) {
+export function ConfirmDialog({
+  open,
+  title,
+  children,
+  confirmLabel = "Подтвердить",
+  confirmVariant = "primary",
+  confirmDisabled,
+  busy,
+  onConfirm,
+  onClose,
+}: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const d = ref.current;
     if (!d) return;
@@ -26,7 +37,7 @@ export function ConfirmDialog({ open, title, children, confirmLabel = "Подт�
     if (!open && d.open) d.close();
   }, [open]);
   return (
-    <dialog ref={ref} className={styles.dialog} onClose={onClose} aria-labelledby="dialog-title">
+    <dialog ref={ref} className={styles.dialog} onClose={onClose} aria-labelledby={titleId}>
       <form
         method="dialog"
         className={styles.body}
@@ -35,10 +46,10 @@ export function ConfirmDialog({ open, title, children, confirmLabel = "Подт�
           onConfirm();
         }}
       >
-        <h2 id="dialog-title">{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         {children}
         <div className={styles.actions}>
-          <Button variant="ghost" onClick={onClose}>
+          <Button variant="ghost" onClick={onClose} disabled={busy}>
             Отмена
           </Button>
           <Button type="submit" variant={confirmVariant} loading={busy} disabled={confirmDisabled}>

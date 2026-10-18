@@ -7,6 +7,7 @@ import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Field, FormActions, FormGrid, Input, Select } from "@/src/components/ui/Form/Form";
 import { Empty, ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
 import { PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
+import { Tip } from "@/src/components/ui/Tip/Tip";
 import { Table } from "@/src/components/ui/Table/Table";
 import { api, errorText } from "@/src/lib/api";
 import { STATUS_LABEL } from "@/src/lib/format";
@@ -45,10 +46,15 @@ export function DisplaysPage() {
         description="Публичное табло открывается по ссылке без входа. Ссылка даёт только просмотр и не позволяет управлять поединком."
       />
       <Stack>
+        <Tip id="displays" title="Как вывести поединок на ТВ">
+          Создайте табло для турнира, откройте его ссылку в браузере телевизора и выберите поединок для показа. Если ссылка попала не туда, перевыпустите её.
+        </Tip>
         {error && <Notice tone="error">{error}</Notice>}
         <Card title="Новое табло">
           <FormGrid cols={2}>
-            <Field label="Название">{(id) => <Input id={id} value={name} placeholder="Татами 1 — ТВ" onChange={(e) => setName(e.target.value)} maxLength={80} />}</Field>
+            <Field label="Название">
+              {(id) => <Input id={id} value={name} placeholder="Татами 1 — ТВ" onChange={(e) => setName(e.target.value)} maxLength={80} />}
+            </Field>
             <Field label="Турнир">
               {(id) => (
                 <Select id={id} value={tournamentId} onChange={(e) => setTournamentId(e.target.value)}>
@@ -84,7 +90,9 @@ export function DisplaysPage() {
           ) : displays.error ? (
             <ErrorState message={displays.error} onRetry={displays.reload} />
           ) : !displays.data?.length ? (
-            <Empty icon="display" title="Табло ещё не созданы">Создайте табло выше: выберите турнир, затем назначьте поединок, который нужно показывать.</Empty>
+            <Empty icon="display" title="Табло ещё не созданы">
+              Создайте табло выше: выберите турнир, затем назначьте поединок, который нужно показывать.
+            </Empty>
           ) : (
             <Table
               head={

@@ -10,7 +10,7 @@ import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Flag } from "@/src/components/ui/Flag/Flag";
 import { Field, FormActions, Input, Select } from "@/src/components/ui/Form/Form";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
-import { Empty, ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
+import { Empty, ErrorState, Loading, Notice, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
 import { LinkRow, RowLink, Table, tableStyles } from "@/src/components/ui/Table/Table";
 import { Tabs } from "@/src/components/ui/Tabs/Tabs";
@@ -61,7 +61,7 @@ export function TournamentDetailPage() {
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"archive" | "complete" | null>(null);
 
-  if (t.loading) return <Loading />;
+  if (t.loading) return <PageSkeleton cards={4} />;
   if (t.error || !t.data) return <ErrorState message={t.error ?? "Турнир не найден"} onRetry={t.reload} />;
   const tour = t.data;
   const registered = new Set(tour.athletes.map((a) => a.athlete_id));
@@ -140,6 +140,9 @@ export function TournamentDetailPage() {
     },
   ];
 
+  const doneCount = steps.filter((s) => s.done).length;
+  const current = steps.findIndex((s) => !s.done);
+
   return (
     <>
       <PageHeader
@@ -197,14 +200,14 @@ export function TournamentDetailPage() {
                 <p>Турнир пропадёт из текущих. Данные, поединки и результаты сохранятся.</p>
               </div>
               <Button variant="danger" onClick={() => setConfirm("archive")}>
-                <Icon name="archive" size={17} />
-                В архив
+                <Icon name="archive" size={17} />В архив
               </Button>
             </div>
           </Card>
         )}
 
         <StatTiles
+          compact
           items={[
             { label: "Участники", value: tour.athletes.length, href: hrefFor("athletes") },
             { label: "Поединки", value: all.length, href: hrefFor("matches") },
@@ -258,12 +261,30 @@ export function TournamentDetailPage() {
                 </FormActions>
               </Card>
             ) : canManage ? (
-              <Card title="Следующие шаги" subtitle="Что осталось подготовить к проведению">
+              <Card
+                title="Подготовка турнира"
+                subtitle={current === -1 ? "Всё готово к проведению" : "Что осталось подготовить к проведению"}
+                actions={
+                  <span className={styles.progressLabel}>
+                    {doneCount} из {steps.length}
+                  </span>
+                }
+              >
+                <div
+                  className={styles.progress}
+                  role="progressbar"
+                  aria-label="Подготовка турнира"
+                  aria-valuemin={0}
+                  aria-valuemax={steps.length}
+                  aria-valuenow={doneCount}
+                >
+                  <span style={{ transform: `scaleX(${doneCount / steps.length})` }} />
+                </div>
                 <ol className={styles.steps}>
-                  {steps.map((s) => (
-                    <li key={s.title} className={s.done ? styles.stepDone : undefined}>
+                  {steps.map((s, i) => (
+                    <li key={s.title} className={s.done ? styles.stepDone : i === current ? styles.stepCurrent : undefined}>
                       <span className={styles.stepMark} aria-hidden>
-                        {s.done ? <Icon name="check" size={16} /> : null}
+                        {s.done ? <Icon name="check" size={15} /> : i + 1}
                       </span>
                       <div className={styles.stepText}>
                         <strong>
@@ -273,7 +294,7 @@ export function TournamentDetailPage() {
                         <span>{s.text}</span>
                       </div>
                       {s.action && !s.done && (
-                        <ButtonLink href={s.action.href} size="sm">
+                        <ButtonLink href={s.action.href} size="sm" variant={i === current ? "primary" : "ghost"}>
                           {s.action.label}
                         </ButtonLink>
                       )}
@@ -373,7 +394,9 @@ export function TournamentDetailPage() {
               </Table>
             ) : (
               <Empty icon="users" title="Участники не зарегистрированы">
-                {canManage ? "Выберите спортсмена из базы выше. Если его нет в базе, сначала добавьте его на странице «Спортсмены»." : "Организатор ещё не добавил участников."}
+                {canManage
+                  ? "Выберите спортсмена из базы выше. Если его нет в базе, сначала добавьте его на странице «Спортсмены»."
+                  : "Организатор ещё не добавил участников."}
               </Empty>
             )}
           </Card>

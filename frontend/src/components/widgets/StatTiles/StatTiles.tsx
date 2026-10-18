@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Icon } from "@/src/components/ui/Icon/Icon";
 import styles from "./StatTiles.module.scss";
 
 export interface StatItem {
@@ -9,14 +10,15 @@ export interface StatItem {
   href?: string;
 }
 
-export function StatTiles({ items }: { items: StatItem[] }) {
+export function StatTiles({ items, compact }: { items: StatItem[]; compact?: boolean }) {
   return (
-    <div className={styles.grid}>
+    <div className={`${styles.grid} ${compact ? styles.compact : ""}`}>
       {items.map((i) => {
         const content = (
           <>
             <div className={styles.label}>{i.label}</div>
             <div className={styles.value}>{i.value}</div>
+            {i.href && <Icon name="arrow" size={16} className={styles.arrow} />}
           </>
         );
         const cls = `${styles.tile} ${i.live ? styles.live : ""} ${i.href ? styles.link : ""}`;

@@ -20,10 +20,15 @@
   border: 1px solid var(--fs-border-strong);
   border-left-width: 4px;
   border-radius: var(--fs-radius-sm);
-  box-shadow: var(--fs-shadow);
+  box-shadow: var(--fs-highlight), var(--fs-shadow-lg);
   font-size: 0.9rem;
+  font-weight: 500;
   pointer-events: auto;
-  animation: enter 0.18s var(--fs-ease);
+  animation: enter var(--fs-dur-slow) var(--fs-ease-spring);
+
+  &.leaving {
+    animation: leave var(--fs-dur) var(--fs-ease) forwards;
+  }
 
   span {
     flex: 1;
@@ -77,6 +82,13 @@
 @keyframes enter {
   from {
     opacity: 0;
-    transform: translateY(6px);
+    transform: translateY(12px) scale(0.96);
+  }
+}
+
+@keyframes leave {
+  to {
+    opacity: 0;
+    transform: translateX(16px);
   }
 }

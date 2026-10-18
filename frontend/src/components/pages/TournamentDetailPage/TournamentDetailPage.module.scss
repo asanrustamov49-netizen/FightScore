@@ -37,24 +37,58 @@
   }
 }
 
+.progressLabel {
+  font-family: var(--fs-font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--fs-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress {
+  height: 6px;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: var(--fs-surface-2);
+  overflow: hidden;
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--fs-blue), var(--fs-cyan));
+    transform-origin: left;
+    transition: transform var(--fs-dur-slow) var(--fs-ease-out);
+  }
+}
+
 .steps {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 0.35rem;
   margin: 0;
   padding: 0;
   list-style: none;
 
   li {
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: start;
-    gap: 0.75rem;
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--fs-row-border);
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.7rem 0.75rem;
+    border: 1px solid transparent;
+    border-radius: var(--fs-radius-sm);
+    transition:
+      background-color var(--fs-dur) var(--fs-ease),
+      border-color var(--fs-dur) var(--fs-ease);
 
-    &:last-child {
-      border-bottom: none;
+    @include down($bp-sm) {
+      grid-template-columns: auto minmax(0, 1fr);
+
+      > a {
+        grid-column: 2;
+        justify-self: start;
+      }
     }
   }
 }
@@ -62,21 +96,38 @@
 .stepMark {
   display: grid;
   place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  margin-top: 0.1rem;
+  width: 1.75rem;
+  height: 1.75rem;
   border-radius: 50%;
   border: 2px solid var(--fs-border-strong);
-  color: var(--fs-on-accent);
-}
-
-.stepDone .stepMark {
-  background: var(--fs-success);
-  border-color: var(--fs-success);
-}
-
-.stepDone .stepText strong {
   color: var(--fs-text-muted);
+  font-family: var(--fs-font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.stepDone {
+  .stepMark {
+    background: var(--fs-success);
+    border-color: var(--fs-success);
+    color: var(--fs-on-accent);
+  }
+
+  .stepText strong {
+    color: var(--fs-text-muted);
+    font-weight: 600;
+  }
+}
+
+.stepCurrent.stepCurrent {
+  border-color: var(--fs-info-border);
+  background: var(--fs-blue-soft);
+
+  .stepMark {
+    border-color: var(--fs-blue-strong);
+    color: var(--fs-blue-strong);
+    box-shadow: 0 0 0 4px var(--fs-blue-soft);
+  }
 }
 
 .stepText {

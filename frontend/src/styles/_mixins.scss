@@ -20,11 +20,47 @@ $bp-lg: 1200px;
 }
 
 @mixin label-caps {
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.11em;
   text-transform: uppercase;
   color: var(--fs-text-muted);
+}
+
+// Form labels: sentence case reads faster than caps in long forms.
+@mixin field-label {
+  font-size: var(--fs-text-sm);
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--fs-text);
+}
+
+// Opaque panel: cards, dialogs, popovers.
+@mixin surface {
+  background: var(--fs-surface);
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius);
+  box-shadow: var(--fs-highlight), var(--fs-shadow-sm);
+}
+
+// Square icon tile with a soft tint (feature icons, empty states).
+@mixin icon-tile($size: 2.75rem) {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: $size;
+  height: $size;
+  border-radius: calc(#{$size} * 0.3);
+  background: var(--fs-blue-soft);
+  color: var(--fs-blue-strong);
+  box-shadow: inset 0 0 0 1px var(--fs-info-border);
+}
+
+// Page-level entrance; children can stagger with --i.
+@mixin enter($delay: 0ms) {
+  animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out) both;
+  animation-delay: calc(#{$delay} + var(--i, 0) * 60ms);
 }
 
 // Background variants (data-bg). Used for the page layer in globals.scss and for previews in settings.

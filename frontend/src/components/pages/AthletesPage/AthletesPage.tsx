@@ -7,6 +7,7 @@ import { Flag } from "@/src/components/ui/Flag/Flag";
 import { SearchField } from "@/src/components/ui/Form/Form";
 import { Empty, ErrorState, Loading } from "@/src/components/ui/Notice/Notice";
 import { PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
+import { Tip } from "@/src/components/ui/Tip/Tip";
 import { Table, tableStyles } from "@/src/components/ui/Table/Table";
 import { useToast } from "@/src/components/ui/Toast/Toast";
 import { AthleteForm, athleteToInput } from "@/src/components/widgets/AthleteForm/AthleteForm";
@@ -32,9 +33,22 @@ export function AthletesPage() {
       <PageHeader
         title="Спортсмены"
         description="Имя, страна, клуб и год рождения. Дополнительные персональные данные не собираются."
-        actions={canCreate && editing === null && <Button variant="primary" onClick={() => setEditing("new")}>Добавить спортсмена</Button>}
+        actions={
+          canCreate &&
+          editing === null && (
+            <Button variant="primary" onClick={() => setEditing("new")}>
+              Добавить спортсмена
+            </Button>
+          )
+        }
       />
       <Stack>
+        {canCreate && (
+          <Tip id="athletes" title="Сначала база, потом турнир">
+            Добавьте спортсмена в базу здесь, затем зарегистрируйте его в турнире на вкладке «Участники». В поединке спортсмены выбираются из участников
+            турнира.
+          </Tip>
+        )}
         {editing !== null && countries.data && (
           <Card title={editing === "new" ? "Новый спортсмен" : `Редактирование: ${personName(editing)}`}>
             <AthleteForm
@@ -53,7 +67,11 @@ export function AthletesPage() {
             />
           </Card>
         )}
-        <Card flush title={`Всего: ${list.data?.length ?? 0}`} actions={<SearchField label="Поиск по фамилии, имени или клубу" placeholder="Фамилия, имя или клуб" value={query} onChange={setQuery} />}>
+        <Card
+          flush
+          title={`Всего: ${list.data?.length ?? 0}`}
+          actions={<SearchField label="Поиск по фамилии, имени или клубу" placeholder="Фамилия, имя или клуб" value={query} onChange={setQuery} />}
+        >
           {list.loading ? (
             <Loading />
           ) : list.error ? (
@@ -62,7 +80,13 @@ export function AthletesPage() {
             <Empty
               icon={q ? "search" : "users"}
               title={q ? "Никого не найдено" : "Спортсменов пока нет"}
-              action={!q && canCreate && editing === null ? <Button variant="primary" onClick={() => setEditing("new")}>Добавить спортсмена</Button> : undefined}
+              action={
+                !q && canCreate && editing === null ? (
+                  <Button variant="primary" onClick={() => setEditing("new")}>
+                    Добавить спортсмена
+                  </Button>
+                ) : undefined
+              }
             >
               {q ? "Измените запрос." : "Добавьте спортсменов в базу, затем зарегистрируйте их в турнире на его странице."}
             </Empty>
@@ -85,7 +109,7 @@ export function AthletesPage() {
                     <Flag code={a.country_code} name={a.country_name} showName />
                   </td>
                   <td className={tableStyles.muted}>{a.club_name ?? "—"}</td>
-                  <td>{a.birth_date ? formatDate(a.birth_date) : a.birth_year ?? "—"}</td>
+                  <td>{a.birth_date ? formatDate(a.birth_date) : (a.birth_year ?? "—")}</td>
                   <td>
                     {a.can_edit && (
                       <Button size="sm" variant="ghost" onClick={() => setEditing(a)}>

@@ -10,6 +10,7 @@ import { Icon } from "@/src/components/ui/Icon/Icon";
 import { CardFacts, LinkCard } from "@/src/components/ui/LinkCard/LinkCard";
 import { Empty, ErrorState, Loading } from "@/src/components/ui/Notice/Notice";
 import { CardGrid, MetaItem, PageHeader, Stack, Toolbar } from "@/src/components/ui/PageHeader/PageHeader";
+import { Tip } from "@/src/components/ui/Tip/Tip";
 import { Segmented } from "@/src/components/ui/Tabs/Tabs";
 import { useToast } from "@/src/components/ui/Toast/Toast";
 import { TournamentForm } from "@/src/components/widgets/TournamentForm/TournamentForm";
@@ -65,6 +66,12 @@ export function TournamentsPage() {
         }
       />
       <Stack>
+        {canCreate && (
+          <Tip id="tournaments" title="Как устроен турнир">
+            Турнир создаётся черновиком, затем публикуется, начинается и завершается. Внутри турнира — участники, судьи, поединки и результаты. Ненужный турнир
+            можно отправить в архив: данные сохранятся.
+          </Tip>
+        )}
         {creating && disciplines.data && (
           <Card title="Новый турнир" subtitle="Начните с черновика и дополняйте его. Когда всё будет готово, опубликуйте турнир на его странице.">
             <TournamentForm

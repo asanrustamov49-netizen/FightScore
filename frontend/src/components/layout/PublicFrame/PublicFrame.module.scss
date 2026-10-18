@@ -29,7 +29,15 @@
   padding: 1rem 1.25rem 3rem;
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
+
+  > * {
+    animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out) both;
+  }
+
+  > :nth-child(n + 2) {
+    animation-delay: 60ms;
+  }
 }
 
 .head {
@@ -39,14 +47,7 @@
 }
 
 .iconBox {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 3rem;
-  height: 3rem;
-  border-radius: 12px;
-  background: var(--fs-surface);
-  border: 1px solid var(--fs-border);
+  @include icon-tile(3.25rem);
 }
 
 .lead {

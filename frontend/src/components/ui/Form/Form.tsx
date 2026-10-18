@@ -6,18 +6,33 @@ interface FieldProps {
   label: string;
   hint?: string;
   error?: string | null;
-  children: (id: string) => ReactNode;
+  /** Marks the field as not required in its label. */
+  optional?: boolean;
+  /** `describedBy` points to the hint or error text; pass it to the control as aria-describedby. */
+  children: (id: string, describedBy: string | undefined) => ReactNode;
 }
 
-export function Field({ label, hint, error, children }: FieldProps) {
+export function Field({ label, hint, error, optional, children }: FieldProps) {
   const id = useId();
+  const noteId = `${id}-note`;
+  const note = error || hint;
   return (
     <div className={styles.field}>
       <label className={styles.label} htmlFor={id}>
         {label}
+        {optional && <span className={styles.optional}>необязательно</span>}
       </label>
-      {children(id)}
-      {error ? <span className={styles.error}>{error}</span> : hint ? <span className={styles.hint}>{hint}</span> : null}
+      {children(id, note ? noteId : undefined)}
+      {error ? (
+        <span className={styles.error} id={noteId}>
+          <Icon name="alert" size={15} />
+          {error}
+        </span>
+      ) : hint ? (
+        <span className={styles.hint} id={noteId}>
+          {hint}
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -1,0 +1,66 @@
+@use "../../../styles/mixins" as *;
+
+.tip {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+  padding: 0.95rem 1rem 0.95rem 1.05rem;
+  border: 1px solid var(--fs-info-border);
+  border-radius: var(--fs-radius);
+  background:
+    radial-gradient(30rem 10rem at 0% 0%, var(--fs-blue-soft), transparent 70%),
+    var(--fs-surface);
+  box-shadow: var(--fs-highlight), var(--fs-shadow-sm);
+  animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out);
+
+  @include down($bp-sm) {
+    flex-wrap: wrap;
+  }
+}
+
+.icon {
+  @include icon-tile(2.25rem);
+  background: var(--fs-brand-grad);
+  color: #fff;
+  box-shadow: var(--fs-shadow-primary);
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+
+  strong {
+    font-size: 0.95rem;
+  }
+}
+
+.text {
+  color: var(--fs-text-muted);
+  font-size: 0.9rem;
+}
+
+.close {
+  flex: none;
+  align-self: center;
+  min-height: 2.1rem;
+  padding: 0 0.85rem;
+  border: 1px solid var(--fs-border-strong);
+  border-radius: calc(var(--fs-radius-sm) - 2px);
+  background: var(--fs-surface-2);
+  color: var(--fs-text);
+  font-size: 0.84rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: border-color var(--fs-dur-fast) var(--fs-ease);
+
+  &:hover {
+    border-color: var(--fs-focus);
+  }
+
+  @include down($bp-sm) {
+    margin-left: 3.1rem;
+  }
+}

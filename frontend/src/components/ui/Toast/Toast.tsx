@@ -9,7 +9,11 @@ interface Toast {
   id: number;
   tone: Tone;
   message: string;
+  leaving?: boolean;
 }
+
+/** Matches the leave animation in Toast.module.scss. */
+const LEAVE_MS = 200;
 
 const ToastContext = createContext<(message: string, tone?: Tone) => void>(() => undefined);
 
@@ -17,7 +21,10 @@ const ToastContext = createContext<(message: string, tone?: Tone) => void>(() =>
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<Toast[]>([]);
   const next = useRef(1);
-  const dismiss = useCallback((id: number) => setItems((list) => list.filter((t) => t.id !== id)), []);
+  const dismiss = useCallback((id: number) => {
+    setItems((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t)));
+    setTimeout(() => setItems((list) => list.filter((t) => t.id !== id)), LEAVE_MS);
+  }, []);
   const show = useCallback(
     (message: string, tone: Tone = "success") => {
       const id = next.current++;
@@ -31,7 +38,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       {children}
       <div className={styles.region} aria-live="polite" aria-atomic="false">
         {items.map((t) => (
-          <div key={t.id} className={`${styles.toast} ${styles[t.tone]}`} role={t.tone === "error" ? "alert" : "status"}>
+          <div key={t.id} className={`${styles.toast} ${styles[t.tone]} ${t.leaving ? styles.leaving : ""}`} role={t.tone === "error" ? "alert" : "status"}>
             <Icon name={t.tone === "error" ? "alert" : t.tone === "info" ? "info" : "check"} size={18} />
             <span>{t.message}</span>
             <button type="button" className={styles.close} onClick={() => dismiss(t.id)} aria-label="Закрыть уведомление">

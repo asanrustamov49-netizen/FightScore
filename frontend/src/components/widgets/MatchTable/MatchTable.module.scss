@@ -12,9 +12,9 @@
 
   &::before {
     content: "";
-    width: 0.5rem;
-    height: 0.5rem;
-    border-radius: 2px;
+    width: 0.55rem;
+    height: 0.55rem;
+    border-radius: 3px;
     flex: none;
   }
 }
@@ -50,24 +50,43 @@
   color: var(--fs-text-muted);
 }
 
-
 .judge {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.35rem 0.65rem;
-  border-radius: var(--fs-radius-sm);
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: calc(var(--fs-radius-sm) - 2px);
   background: var(--fs-blue);
+  background-image: var(--fs-primary-grad);
   color: var(--fs-on-accent);
   font-size: 0.82rem;
   font-weight: 650;
+  box-shadow: var(--fs-shadow-primary);
+  transition: transform var(--fs-dur-fast) var(--fs-ease);
 
   &:hover {
-    background: var(--fs-blue-strong);
+    background-image: var(--fs-primary-grad-hover);
     text-decoration: none;
+
+    svg {
+      transform: translateX(2px);
+    }
+  }
+
+  svg {
+    transition: transform var(--fs-dur) var(--fs-ease-out);
   }
 }
 
 .chevron {
   color: var(--fs-text-faint);
+  transition:
+    transform var(--fs-dur) var(--fs-ease-out),
+    color var(--fs-dur) var(--fs-ease);
+
+  tr:hover & {
+    color: var(--fs-text-muted);
+    transform: translateX(3px);
+  }
 }

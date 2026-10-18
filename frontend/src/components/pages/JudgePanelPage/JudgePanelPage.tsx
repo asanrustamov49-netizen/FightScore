@@ -147,9 +147,9 @@ export function JudgePanelPage() {
             {def.penalties.length > 0 && (
               <div className={styles.group}>
                 <span className={styles.groupLabel}>Нарушения</span>
-                <div className={styles.buttons}>
+                <div className={`${styles.buttons} ${styles.buttonsWide}`}>
                   {def.penalties.map((pen) => (
-                    <Button key={pen.code} size="sm" disabled={!live || !allowed("penalty")} onClick={() => setDialog({ kind: "penalty", side, code: pen.code })}>
+                    <Button key={pen.code} size="sm" className={styles.wrapButton} disabled={!live || !allowed("penalty")} onClick={() => setDialog({ kind: "penalty", side, code: pen.code })}>
                       {pen.label}
                     </Button>
                   ))}

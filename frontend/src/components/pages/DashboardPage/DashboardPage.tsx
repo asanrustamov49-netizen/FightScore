@@ -6,11 +6,14 @@ import { ButtonLink } from "@/src/components/ui/Button/Button";
 import { Card } from "@/src/components/ui/Card/Card";
 import { Icon } from "@/src/components/ui/Icon/Icon";
 import { CardFacts, LinkCard } from "@/src/components/ui/LinkCard/LinkCard";
-import { Empty, ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
+import { Empty, ErrorState, Notice, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { CardGrid, Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
 import { LinkRow, RowLink, Table } from "@/src/components/ui/Table/Table";
 import { MatchTable } from "@/src/components/widgets/MatchTable/MatchTable";
 import { StatTiles } from "@/src/components/widgets/StatTiles/StatTiles";
+import { Tip } from "@/src/components/ui/Tip/Tip";
+import { Welcome } from "@/src/components/widgets/Welcome/Welcome";
+import type { IconName } from "@/src/components/ui/Icon/Icon";
 import { dateRange, formatDateTime } from "@/src/lib/format";
 import { useSession } from "@/src/lib/session";
 import type { DisplayItem, MatchListItem, Side, TournamentSummary } from "@/src/lib/types";
@@ -36,7 +39,7 @@ export function DashboardPage() {
   const displays = useResource<DisplayItem[]>(me?.capabilities.displays ? "/displays" : null);
   const canCreate = can("tournament.manage") || can("tournament.create");
 
-  if (tournaments.loading || matches.loading) return <Loading />;
+  if (tournaments.loading || matches.loading) return <PageSkeleton cards={4} />;
   if (tournaments.error || matches.error) {
     return <ErrorState message={tournaments.error ?? matches.error ?? ""} onRetry={() => (tournaments.reload(), matches.reload())} />;
   }
@@ -47,6 +50,28 @@ export function DashboardPage() {
   const mine = all.filter((m) => m.is_official && m.status !== "completed" && m.status !== "cancelled");
   const athletes = active.reduce((n, t) => n + t.athletes_count, 0);
   const noRoles = me && !me.capabilities.organizer && !me.capabilities.judge && !me.capabilities.displays;
+  const firstVisit = canCreate && (tournaments.data ?? []).length === 0;
+  const nextStep = canCreate ? nextStepFor(tournaments.data ?? []) : null;
+
+  // New organizer: one clear action instead of empty tables and zero counters.
+  if (firstVisit) {
+    return (
+      <Stack>
+        <Welcome name={me?.user.displayName ?? ""} />
+        {live.length > 0 && (
+          <Card title="Идут сейчас" subtitle="Поединки, которые ведут судьи или которые ждут подтверждения итога" flush>
+            <MatchTable matches={live} />
+          </Card>
+        )}
+
+        {mine.length > 0 && (
+          <Card title="Мои поединки как судьи" subtitle="«Судейство» открывает панель управления поединком" flush>
+            <MatchTable matches={mine} />
+          </Card>
+        )}
+      </Stack>
+    );
+  }
 
   return (
     <>
@@ -68,23 +93,26 @@ export function DashboardPage() {
             Организатор турнира может назначить вас судьёй или оператором табло — после этого здесь появятся ваши поединки.
           </Notice>
         )}
-        {canCreate && (tournaments.data ?? []).length === 0 && (
-          <Card>
-            <Empty
-              icon="trophy"
-              title="Начните с турнира"
-              action={
-                <>
-                  <ButtonLink href="/tournaments?new=1" variant="primary">
-                    Создать первый турнир
-                  </ButtonLink>
-                  <ButtonLink href="/rules">Посмотреть правила</ButtonLink>
-                </>
-              }
-            >
-              Создайте турнир и выберите дисциплины. Затем добавьте спортсменов, судей и поединки и выведите поединок на табло.
-            </Empty>
-          </Card>
+        {nextStep && (
+          <section className={styles.next} aria-label="Следующий шаг">
+            <span className={styles.nextIcon} aria-hidden>
+              <Icon name={nextStep.icon} size={22} />
+            </span>
+            <div className={styles.nextText}>
+              <span className={styles.nextKicker}>Следующий шаг · {nextStep.tournament}</span>
+              <strong>{nextStep.title}</strong>
+              <span>{nextStep.text}</span>
+            </div>
+            <ButtonLink href={nextStep.href} variant="primary">
+              {nextStep.action}
+              <Icon name="arrow" size={17} />
+            </ButtonLink>
+          </section>
+        )}
+        {canCreate && (
+          <Tip id="dashboard" title="Обзор — ваша стартовая точка">
+            Здесь видно, что идёт сейчас, что ждёт старта и какой шаг подготовки следующий. Карточки и строки открывают подробности.
+          </Tip>
         )}
 
         <StatTiles
@@ -139,42 +167,62 @@ export function DashboardPage() {
         )}
 
         <Columns>
-          <Card title="Текущие и запланированные поединки" actions={<Link href="/matches">Все поединки</Link>} flush>
+          <Card title="Ожидают старта" actions={<Link href="/matches">Все поединки</Link>} flush>
             <MatchTable
-              matches={[...live, ...upcoming].slice(0, 10)}
-              emptyText="Нет текущих и запланированных поединков"
+              matches={upcoming.slice(0, 10)}
+              emptyText="Нет поединков, ожидающих старта"
               emptyHint={canCreate ? "Поединки создаются на странице турнира во вкладке «Поединки»." : undefined}
             />
           </Card>
-          {me?.capabilities.displays ? (
-            <Card title="Табло" actions={<Link href="/displays">Управление</Link>} flush>
-              {displays.data?.length ? (
-                <ul className={styles.displays}>
-                  {displays.data.map((d) => (
-                    <li key={d.id}>
-                      <Icon name="display" size={20} />
-                      <div>
-                        <strong>{d.name}</strong>
-                        <span>{d.match_number ? `Показывает поединок №${d.match_number}` : "Поединок не выбран"}</span>
-                      </div>
-                    </li>
+          <Stack>
+            {canCreate && (
+              <Card title="Быстрые действия">
+                <nav className={styles.quick} aria-label="Быстрые действия">
+                  {QUICK.map((q) => (
+                    <Link key={q.href} href={q.href} className={styles.quickItem}>
+                      <span className={styles.quickIcon} aria-hidden>
+                        <Icon name={q.icon} size={18} />
+                      </span>
+                      <span>
+                        <strong>{q.label}</strong>
+                        <small>{q.text}</small>
+                      </span>
+                      <Icon name="chevron" size={16} className={styles.quickChevron} />
+                    </Link>
                   ))}
-                </ul>
-              ) : (
-                <Empty icon="display" title="Табло не настроены" action={<ButtonLink href="/displays">Создать табло</ButtonLink>}>
-                  Табло — публичная страница для ТВ, открывается по ссылке без входа.
-                </Empty>
-              )}
-            </Card>
-          ) : (
-            <Card title="Как это работает">
-              <ol className={styles.howto}>
-                <li>Организатор создаёт турнир, участников и поединки.</li>
-                <li>Судья ведёт поединок в судейской панели — сервер подтверждает каждое действие.</li>
-                <li>Табло на ТВ обновляется само, без перезагрузки.</li>
-              </ol>
-            </Card>
-          )}
+                </nav>
+              </Card>
+            )}
+            {me?.capabilities.displays ? (
+              <Card title="Табло" actions={<Link href="/displays">Управление</Link>} flush>
+                {displays.data?.length ? (
+                  <ul className={styles.displays}>
+                    {displays.data.map((d) => (
+                      <li key={d.id}>
+                        <Icon name="display" size={20} />
+                        <div>
+                          <strong>{d.name}</strong>
+                          <span>{d.match_number ? `Показывает поединок №${d.match_number}` : "Поединок не выбран"}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <Empty icon="display" title="Табло не настроены" action={<ButtonLink href="/displays">Создать табло</ButtonLink>}>
+                    Табло — публичная страница для ТВ, открывается по ссылке без входа.
+                  </Empty>
+                )}
+              </Card>
+            ) : (
+              <Card title="Как это работает">
+                <ol className={styles.howto}>
+                  <li>Организатор создаёт турнир, участников и поединки.</li>
+                  <li>Судья ведёт поединок в судейской панели — сервер подтверждает каждое действие.</li>
+                  <li>Табло на ТВ обновляется само, без перезагрузки.</li>
+                </ol>
+              </Card>
+            )}
+          </Stack>
         </Columns>
 
         <Card title="Недавние результаты" flush>
@@ -214,4 +262,56 @@ export function DashboardPage() {
       </Stack>
     </>
   );
+}
+
+const QUICK: { href: string; label: string; text: string; icon: IconName }[] = [
+  { href: "/tournaments?new=1", label: "Новый турнир", text: "Черновик можно дополнить позже", icon: "plus" },
+  { href: "/athletes", label: "Спортсмены", text: "База участников для турниров", icon: "users" },
+  { href: "/rules", label: "Профили правил", text: "Версии правил для поединков", icon: "book" },
+  { href: "/settings", label: "Настройки", text: "Тема, плотность, пароль", icon: "settings" },
+];
+
+interface NextStep {
+  tournament: string;
+  title: string;
+  text: string;
+  action: string;
+  href: string;
+  icon: IconName;
+}
+
+/** What the nearest tournament still lacks, from the list counters the server returns. */
+function nextStepFor(list: TournamentSummary[]): NextStep | null {
+  const open = list.filter((t) => t.can_manage && !t.archived_at && t.status !== "completed").sort((a, b) => a.starts_on.localeCompare(b.starts_on));
+  for (const t of open) {
+    const base = `/tournaments/${t.id}`;
+    if (t.athletes_count < 2)
+      return {
+        tournament: t.name,
+        title: "Зарегистрируйте участников",
+        text: `В турнире ${t.athletes_count} из минимум двух спортсменов для поединка.`,
+        action: "К участникам",
+        href: `${base}?tab=athletes`,
+        icon: "users",
+      };
+    if (t.matches_count === 0)
+      return {
+        tournament: t.name,
+        title: "Создайте первый поединок",
+        text: "Выберите спортсменов в красный и синий углы и версию правил.",
+        action: "К поединкам",
+        href: `${base}?tab=matches`,
+        icon: "versus",
+      };
+    if (t.status === "draft")
+      return {
+        tournament: t.name,
+        title: "Опубликуйте турнир",
+        text: "Черновик виден только вам. После публикации турнир можно начать.",
+        action: "Открыть турнир",
+        href: base,
+        icon: "check",
+      };
+  }
+  return null;
 }

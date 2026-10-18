@@ -12,11 +12,12 @@
   font-size: 0.92rem;
 
   th {
-    padding: 0.65rem var(--fs-cell-pad-x);
+    padding: 0.7rem var(--fs-cell-pad-x);
+    background: color-mix(in srgb, var(--fs-surface-2) 55%, transparent);
     text-align: left;
-    font-size: 0.7rem;
+    font-size: 0.69rem;
     font-weight: 700;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.09em;
     text-transform: uppercase;
     color: var(--fs-text-muted);
     border-bottom: 1px solid var(--fs-border);

@@ -1,53 +1,72 @@
 .badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
+  gap: 0.4rem;
+  min-height: 1.5rem;
+  padding: 0.15rem 0.6rem;
   border-radius: 999px;
+  font-family: var(--fs-font);
   font-size: 0.74rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
   white-space: nowrap;
   border: 1px solid transparent;
+  vertical-align: middle;
+
+  // Status dot in the badge colour.
+  &::before {
+    content: "";
+    flex: none;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0.9;
+  }
 }
 
 .neutral {
   background: var(--fs-surface-2);
   color: var(--fs-text-muted);
   border-color: var(--fs-border);
+
+  &::before {
+    opacity: 0.6;
+  }
 }
 
 .info {
   background: var(--fs-blue-soft);
   color: var(--fs-blue-strong);
+  border-color: var(--fs-info-border);
 }
 
 .success {
   background: var(--fs-success-soft);
   color: var(--fs-success);
+  border-color: var(--fs-success-border);
 }
 
 .warning {
   background: var(--fs-warning-soft);
   color: var(--fs-warning);
+  border-color: var(--fs-warning-border);
 }
 
 .danger {
   background: var(--fs-red-soft);
   color: var(--fs-red-strong);
+  border-color: var(--fs-danger-border);
 }
 
 .live {
   background: var(--fs-red);
   color: var(--fs-on-accent);
+  box-shadow: 0 0 0 3px var(--fs-red-soft);
 
   &::before {
-    content: "";
-    width: 0.45rem;
-    height: 0.45rem;
-    border-radius: 50%;
-    background: currentColor;
-    animation: pulse 1.2s ease-in-out infinite;
+    animation: pulse 1.4s ease-in-out infinite;
   }
 }
 
@@ -56,6 +75,11 @@
   color: var(--fs-accent);
   border-color: var(--fs-warning-border);
   text-transform: uppercase;
+  letter-spacing: 0.06em;
+
+  &::before {
+    display: none;
+  }
 }
 
 @keyframes pulse {

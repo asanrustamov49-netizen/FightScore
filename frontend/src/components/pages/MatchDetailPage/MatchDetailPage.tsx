@@ -8,9 +8,8 @@ import { Card } from "@/src/components/ui/Card/Card";
 import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Flag } from "@/src/components/ui/Flag/Flag";
 import { Field, Input } from "@/src/components/ui/Form/Form";
-import { ErrorState, Loading, Notice } from "@/src/components/ui/Notice/Notice";
+import { ErrorState, Loading, Notice, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
-import { Table } from "@/src/components/ui/Table/Table";
 import { EventLog } from "@/src/components/widgets/EventLog/EventLog";
 import { MatchSetupForm } from "@/src/components/widgets/MatchSetupForm/MatchSetupForm";
 import { OfficialsEditor } from "@/src/components/widgets/OfficialsEditor/OfficialsEditor";
@@ -36,7 +35,7 @@ export function MatchDetailPage() {
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState("");
 
-  if (match.loading) return <Loading />;
+  if (match.loading) return <PageSkeleton cards={2} />;
   if (match.error || !match.data) return <ErrorState message={match.error ?? "Поединок не найден"} onRetry={match.reload} />;
   const m = match.data;
   const def = m.rules?.definition;
@@ -57,16 +56,24 @@ export function MatchDetailPage() {
     }
   }
 
-  const sideRow = (side: Side) => {
+  const corner = (side: Side) => {
     const p = m.participants[side];
+    const won = m.status === "completed" && m.result?.winner_side === side;
     return (
-      <tr key={side}>
-        <td className={`${styles.side} ${styles[side]}`}>{SIDE_LABEL[side]}</td>
-        <td>{p ? personName(p) : "—"}</td>
-        <td>{p && <Flag code={p.country_code} name={p.country_name} showName />}</td>
-        <td>{p?.club_name ?? "—"}</td>
-        <td className={styles.score}>{m.state.score[side]}</td>
-      </tr>
+      <div className={`${styles.corner} ${styles[side]} ${won ? styles.won : ""}`}>
+        <span className={styles.cornerLabel}>
+          {SIDE_LABEL[side]}
+          {won && <span className={styles.winBadge}>Победитель</span>}
+        </span>
+        <strong className={styles.cornerName}>{p ? personName(p) : <span className={styles.unset}>Не назначен</span>}</strong>
+        <span className={styles.cornerMeta}>
+          {p && <Flag code={p.country_code} name={p.country_name} showName />}
+          {p?.club_name && <span>{p.club_name}</span>}
+        </span>
+        <span className={styles.cornerScore} aria-label={`Баллы: ${m.state.score[side]}`}>
+          {m.state.score[side]}
+        </span>
+      </div>
     );
   };
   const end = def?.endMethods.find((e) => e.code === m.result?.outcome_code);
@@ -88,7 +95,7 @@ export function MatchDetailPage() {
         meta={
           <>
             <MetaItem icon="versus">{m.discipline.name}</MetaItem>
-            <MetaItem icon="book">{m.rules ? `${m.rules.profileName}, версия ${m.rules.versionNumber}` : "Правила не выбраны"}</MetaItem>
+            <MetaItem icon="book">{m.rules ? `${m.rules.profileName}, версия правил ${m.rules.versionNumber}` : "Правила не выбраны"}</MetaItem>
           </>
         }
         actions={
@@ -116,34 +123,25 @@ export function MatchDetailPage() {
         {m.status === "cancelled" && <Notice tone="warning">Поединок отменён. Причина: {m.cancelReason}</Notice>}
         {canManage && m.status === "prepared" && (
           <Notice tone="info" title="Подготовка поединка">
-            Выберите спортсменов и версию правил, назначьте главного судью, затем нажмите «Готов к старту». После этого состав и правила
-            фиксируются.
+            Выберите спортсменов и версию правил, назначьте главного судью, затем нажмите «Готов к старту». После этого состав и правила фиксируются.
           </Notice>
         )}
         {m.status === "completed" && m.result && (
           <Notice tone="success">
             Результат подтверждён {formatDateTime(m.result.confirmed_at)} ({m.result.confirmed_by}):{" "}
-            {m.result.winner_side ? `победитель — ${personName(m.participants[m.result.winner_side])}` : "без победителя"}, {end?.label ?? m.result.outcome_code}.
+            {m.result.winner_side ? `победитель — ${personName(m.participants[m.result.winner_side])}` : "без победителя"},{" "}
+            {end?.label ?? m.result.outcome_code}.
           </Notice>
         )}
         <Columns>
           <Stack>
-            <Card title="Участники и счёт" flush>
-              <Table
-                head={
-                  <tr>
-                    <th>Сторона</th>
-                    <th>Спортсмен</th>
-                    <th>Страна</th>
-                    <th>Клуб</th>
-                    <th className={styles.score}>Баллы</th>
-                  </tr>
-                }
-              >
-                {sideRow("red")}
-                {sideRow("blue")}
-              </Table>
-            </Card>
+            <section className={styles.versus} aria-label="Участники и счёт">
+              {corner("red")}
+              <span className={styles.vs} aria-hidden>
+                VS
+              </span>
+              {corner("blue")}
+            </section>
             {canManage && prepared && tour.data && rules.data && (
               <Card title="Состав и правила" subtitle="Менять можно, пока поединок не отмечен как готовый к старту">
                 <MatchSetupForm
@@ -183,16 +181,29 @@ export function MatchDetailPage() {
                 <dt>Период</dt>
                 <dd>{m.state.periodIndex ? `${m.state.periodIndex} из ${def?.periods.count ?? "?"}` : "—"}</dd>
                 <dt>Время</dt>
-                <dd>{formatClock(m.clock.remainingMs)}{m.clock.running ? " (идёт)" : ""}</dd>
-                <dt title="Счётчик подтверждённых изменений состояния, нужен для синхронизации экранов">Изменений</dt>
+                <dd>
+                  {formatClock(m.clock.remainingMs)}
+                  {m.clock.running ? " (идёт)" : ""}
+                </dd>
+                <dt title="Счётчик подтверждённых изменений состояния, нужен для синхронизации экранов. Не связан с версией правил">Изменений состояния</dt>
                 <dd>{m.version}</dd>
                 <dt>Судьи</dt>
                 <dd>
-                  {m.officials.length ? m.officials.map((o) => `${o.display_name}${o.official_role === "chief_judge" ? " (гл.)" : ""}`).join(", ") : "не назначены"}
+                  {m.officials.length
+                    ? m.officials.map((o) => `${o.display_name}${o.official_role === "chief_judge" ? " (гл.)" : ""}`).join(", ")
+                    : "не назначены"}
                 </dd>
               </dl>
             </Card>
-            <Card title="Журнал событий" flush actions={<Button size="sm" variant="ghost" onClick={events.reload}>Обновить</Button>}>
+            <Card
+              title="Журнал событий"
+              flush
+              actions={
+                <Button size="sm" variant="ghost" onClick={events.reload}>
+                  Обновить
+                </Button>
+              }
+            >
               {events.data ? <EventLog events={events.data} definition={def} /> : <Loading />}
             </Card>
           </Stack>

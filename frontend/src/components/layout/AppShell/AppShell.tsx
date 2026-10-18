@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
 import { ErrorState, Loading } from "@/src/components/ui/Notice/Notice";
+import { resetTips } from "@/src/lib/onboarding";
 import { usePreferences, useResolvedTheme } from "@/src/lib/preferences";
 import { useSession } from "@/src/lib/session";
 import type { Me } from "@/src/lib/types";
@@ -40,14 +41,38 @@ const NAV: { group: string; items: NavItem[] }[] = [
   },
 ];
 
+/** Logo mark: the red and blue corners split by the centre line. Inline SVG, no network. */
+export function BrandMark({ size = 28 }: { size?: number }) {
+  // Unique gradient ids: two marks on one page must not point at a hidden one.
+  const uid = useId().replace(/[^a-zA-Z0-9-]/g, "");
+  const r = `fs-mark-r${uid}`;
+  const b = `fs-mark-b${uid}`;
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden focusable="false" className={styles.mark}>
+      <defs>
+        <linearGradient id={r} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ff5a66" />
+          <stop offset="1" stopColor="#c9202d" />
+        </linearGradient>
+        <linearGradient id={b} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#5b8cff" />
+          <stop offset="1" stopColor="#1f4fd6" />
+        </linearGradient>
+      </defs>
+      <path d="M9 2h14l7 7v14l-7 7H9l-7-7V9z" fill={`url(#${b})`} />
+      <path d="M9 2h9.5L13.5 30H9l-7-7V9z" fill={`url(#${r})`} />
+      <path d="M18.5 2 13.5 30" stroke="#fff" strokeOpacity=".9" strokeWidth="1.6" />
+    </svg>
+  );
+}
+
 export function Brand() {
   return (
     <Link href="/" className={styles.brand}>
-      <span className={styles.mark} aria-hidden>
-        <span />
-        <span />
+      <BrandMark />
+      <span>
+        Fight<span className={styles.brandAccent}>Score</span>
       </span>
-      FightScore
     </Link>
   );
 }
@@ -77,6 +102,76 @@ function ThemeToggle() {
     >
       <Icon name={current === "dark" ? "sun" : "moon"} size={20} />
     </button>
+  );
+}
+
+/** Account menu in the header: settings, tips, sign-out. Closes on Esc, outside click and navigation. */
+function UserMenu({ me, roleNames, onLogout }: { me: Me; roleNames: string; onLogout: () => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  const pathname = usePathname();
+  const [lastPath, setLastPath] = useState(pathname);
+  if (lastPath !== pathname) {
+    setLastPath(pathname);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: PointerEvent) => !ref.current?.contains(e.target as Node) && setOpen(false);
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      ref.current?.querySelector<HTMLButtonElement>("button")?.focus();
+    };
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className={styles.userMenu} ref={ref}>
+      <button
+        type="button"
+        className={styles.headerUser}
+        aria-expanded={open}
+        aria-haspopup="true"
+        aria-label={`Меню аккаунта: ${me.user.displayName}`}
+        onClick={() => setOpen((o) => !o)}
+      >
+        <span className={styles.avatar} aria-hidden>
+          {initials(me.user.displayName)}
+        </span>
+        <span className={styles.headerUserName}>{me.user.displayName}</span>
+        <Icon name="chevron" size={16} className={styles.headerChevron} />
+      </button>
+      {open && (
+        <div className={styles.dropdown}>
+          <div className={styles.dropdownHead}>
+            <strong>{me.user.displayName}</strong>
+            <span>{me.user.login}</span>
+            <span>{roleNames}</span>
+          </div>
+          <Link href="/settings" className={styles.dropdownItem}>
+            <Icon name="settings" size={18} />
+            Настройки
+          </Link>
+          {me.capabilities.organizer && (
+            <Link href="/dashboard" className={styles.dropdownItem} onClick={() => resetTips()}>
+              <Icon name="help" size={18} />
+              Показать подсказки снова
+            </Link>
+          )}
+          <button type="button" className={styles.dropdownItem} onClick={onLogout}>
+            <Icon name="logout" size={18} />
+            Выйти
+          </button>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -149,13 +244,26 @@ export function AppShell({ children }: { children: ReactNode }) {
           </button>
         </div>
       </aside>
-      {menuOpen && <button type="button" className={styles.scrim} aria-label="Закрыть меню" onClick={() => setMenuOpen(false)} />}
+      <button
+        type="button"
+        className={`${styles.scrim} ${menuOpen ? styles.scrimOpen : ""}`}
+        aria-label="Закрыть меню"
+        tabIndex={menuOpen ? 0 : -1}
+        aria-hidden={!menuOpen}
+        onClick={() => setMenuOpen(false)}
+      />
       <div className={styles.content}>
         {me.deployMode === "dev-http" && (
           <div className={styles.devBanner}>Тестовый режим без шифрования (HTTP). Не используйте его для реального турнира.</div>
         )}
         <header className={styles.header}>
-          <button type="button" className={`${styles.iconButton} ${styles.menuButton}`} onClick={() => setMenuOpen(true)} aria-label="Открыть меню" aria-expanded={menuOpen}>
+          <button
+            type="button"
+            className={`${styles.iconButton} ${styles.menuButton}`}
+            onClick={() => setMenuOpen(true)}
+            aria-label="Открыть меню"
+            aria-expanded={menuOpen}
+          >
             <Icon name="menu" size={22} />
           </button>
           <span className={styles.headerBrand}>
@@ -163,12 +271,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </span>
           <div className={styles.headerActions}>
             <ThemeToggle />
-            <Link href="/settings" className={styles.headerUser} title="Настройки">
-              <span className={styles.avatar} aria-hidden>
-                {initials(me.user.displayName)}
-              </span>
-              <span className={styles.headerUserName}>{me.user.displayName}</span>
-            </Link>
+            <UserMenu me={me} roleNames={roleNames} onLogout={logout} />
           </div>
         </header>
         <main className={styles.main} id="main" tabIndex={-1}>
@@ -176,7 +279,10 @@ export function AppShell({ children }: { children: ReactNode }) {
         </main>
         <footer className={styles.footer}>
           <span>FightScore · рабочее название</span>
-          <span>Данные поединков подтверждаются сервером</span>
+          <span className={styles.footerNote}>
+            <Icon name="shield" size={14} />
+            Счёт и время подтверждает сервер
+          </span>
         </footer>
       </div>
     </div>

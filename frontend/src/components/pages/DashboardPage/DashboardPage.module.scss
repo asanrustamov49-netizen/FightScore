@@ -69,3 +69,118 @@
   gap: 0.5rem;
   color: var(--fs-text-muted);
 }
+
+.next {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem 1.25rem;
+  padding: 1.15rem 1.35rem;
+  border: 1px solid var(--fs-info-border);
+  border-radius: var(--fs-radius);
+  background:
+    radial-gradient(40rem 12rem at 0% 0%, var(--fs-blue-soft), transparent 70%),
+    var(--fs-surface);
+  box-shadow: var(--fs-highlight), var(--fs-shadow-sm);
+}
+
+.nextIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.9rem;
+  height: 2.9rem;
+  border-radius: 14px;
+  background: var(--fs-primary-grad);
+  color: #fff;
+  box-shadow: var(--fs-shadow-primary);
+}
+
+.nextText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  flex: 1 1 16rem;
+  min-width: 0;
+
+  strong {
+    font-family: var(--fs-font-display);
+    font-size: 1.15rem;
+  }
+
+  span:last-child {
+    color: var(--fs-text-muted);
+    font-size: 0.9rem;
+  }
+}
+
+.nextKicker {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--fs-blue-strong);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.quick {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: -0.5rem;
+}
+
+.quickItem {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem 0.6rem;
+  border-radius: var(--fs-radius-sm);
+  color: var(--fs-text);
+  transition: background-color var(--fs-dur-fast) var(--fs-ease);
+
+  > span:nth-child(2) {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+    line-height: 1.35;
+  }
+
+  strong {
+    font-size: 0.92rem;
+  }
+
+  small {
+    color: var(--fs-text-muted);
+    font-size: 0.8rem;
+  }
+
+  &:hover {
+    background: var(--fs-surface-2);
+    text-decoration: none;
+
+    .quickChevron {
+      transform: translateX(3px);
+      color: var(--fs-text-muted);
+    }
+  }
+}
+
+.quickIcon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 10px;
+  background: var(--fs-blue-soft);
+  color: var(--fs-blue-strong);
+}
+
+.quickChevron {
+  color: var(--fs-text-faint);
+  transition:
+    transform var(--fs-dur) var(--fs-ease-out),
+    color var(--fs-dur) var(--fs-ease);
+}

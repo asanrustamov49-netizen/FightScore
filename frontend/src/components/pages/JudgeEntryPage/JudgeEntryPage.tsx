@@ -57,7 +57,7 @@ export function JudgeEntryPage() {
         <Loading />
       ) : me === null ? (
         <Card title="Войдите под учётной записью судьи">
-          <AuthForm onSuccess={() => load()} />
+          <AuthForm heading={false} onSuccess={() => load()} />
         </Card>
       ) : matches === null && !error ? (
         <Loading label="Загружаем назначенные поединки…" />

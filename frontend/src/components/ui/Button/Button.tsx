@@ -22,9 +22,32 @@ export function Button({ variant = "secondary", size = "md", loading, block, cla
 }
 
 /** Navigation styled as a button (avoids nesting <button> inside <a>). */
-export function ButtonLink({ href, variant = "secondary", size = "md", children, target }: { href: string; variant?: Variant; size?: "sm" | "md" | "lg"; children: ReactNode; target?: string }) {
+export function ButtonLink({
+  href,
+  variant = "secondary",
+  size = "md",
+  children,
+  target,
+  block,
+  className,
+  onClick,
+}: {
+  href: string;
+  variant?: Variant;
+  size?: "sm" | "md" | "lg";
+  children: ReactNode;
+  target?: string;
+  block?: boolean;
+  className?: string;
+  onClick?: () => void;
+}) {
   return (
-    <Link href={href} target={target} className={[styles.button, styles[variant], styles[size], styles.link].join(" ")}>
+    <Link
+      href={href}
+      target={target}
+      onClick={onClick}
+      className={[styles.button, styles[variant], styles[size], styles.link, block && styles.block, className].filter(Boolean).join(" ")}
+    >
       {children}
     </Link>
   );

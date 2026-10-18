@@ -58,3 +58,30 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
     </div>
   );
 }
+
+function Bar({ w, h = 14 }: { w: string; h?: number }) {
+  return <span className="fs-skeleton" style={{ width: w, height: h }} />;
+}
+
+/** Page placeholder while the first data loads: keeps the layout steady instead of a lone spinner. */
+export function PageSkeleton({ cards = 3, label = "Загрузка…" }: { cards?: number; label?: string }) {
+  return (
+    <div className={styles.skeletonPage} role="status" aria-busy="true">
+      <span className="visually-hidden">{label}</span>
+      <div className={styles.skeletonHead} aria-hidden>
+        <Bar w="9rem" h={12} />
+        <Bar w="min(22rem, 70%)" h={30} />
+        <Bar w="min(32rem, 90%)" />
+      </div>
+      <div className={styles.skeletonGrid} aria-hidden>
+        {Array.from({ length: cards }, (_, i) => (
+          <div key={i} className={styles.skeletonCard}>
+            <Bar w="60%" h={18} />
+            <Bar w="85%" />
+            <Bar w="40%" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
