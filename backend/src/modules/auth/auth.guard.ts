@@ -1,7 +1,7 @@
 import { CanActivate, createParamDecorator, ExecutionContext, Inject, Injectable, SetMetadata } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import type { Request } from 'express';
-import { APP_CONFIG, type AppConfig } from '../../config/config.js';
+import { APP_CONFIG, isOriginAllowed, type AppConfig } from '../../config/config.js';
 import { parseCookies, sessionCookieName } from '../../common/cookies.js';
 import { AppError } from '../../common/errors.js';
 import { AuthService, type SessionUser } from './auth.service.js';
@@ -41,7 +41,7 @@ export class AuthGuard implements CanActivate {
     if (!SAFE_METHODS.has(req.method)) {
       if (req.headers['x-fightscore-request'] !== '1') throw new AppError('CSRF', 'Запрос отклонён: нет заголовка X-FightScore-Request');
       const origin = req.headers.origin;
-      if (origin && !this.config.publicOrigins.includes(origin)) throw new AppError('CSRF', 'Запрос отклонён: недопустимый Origin');
+      if (origin && !isOriginAllowed(this.config, origin)) throw new AppError('CSRF', 'Запрос отклонён: недопустимый Origin');
     }
     const token = parseCookies(req.headers.cookie)[sessionCookieName(this.config)];
     req.sessionToken = token;

@@ -10,7 +10,7 @@ import {
 } from '@nestjs/websockets';
 import type { Subscription } from 'rxjs';
 import type { Namespace, Socket } from 'socket.io';
-import { loadConfig } from '../../config/config.js';
+import { isOriginAllowed, loadConfig } from '../../config/config.js';
 import { AppError, fromPgError } from '../../common/errors.js';
 import { parse, uuid } from '../../common/validation.js';
 import { AuthService, type SessionUser } from '../auth/auth.service.js';
@@ -18,11 +18,12 @@ import { DisplaysService } from '../displays/displays.service.js';
 import { MatchesService } from '../matches/matches.service.js';
 import { ScoringService } from '../scoring/scoring.service.js';
 
-const origins = () => loadConfig().publicOrigins;
+const allowed = (origin: string) => isOriginAllowed(loadConfig(), origin);
+const cors = { origin: (o: string | undefined, cb: (e: Error | null, ok?: boolean) => void) => cb(null, !o || allowed(o)), credentials: false };
 
 function originAllowed(socket: Socket) {
   const origin = socket.handshake.headers.origin;
-  return !origin || origins().includes(origin);
+  return !origin || allowed(origin);
 }
 
 const wsLogger = new Logger('Realtime');
@@ -41,7 +42,7 @@ const publicRoom = (id: string) => `p:${id}`;
 const displayRoom = (id: string) => `d:${id}`;
 
 /** Read-only channel for TV displays. Accepts no commands. */
-@WebSocketGateway({ namespace: '/public', cors: { origin: origins(), credentials: false } })
+@WebSocketGateway({ namespace: '/public', cors })
 export class PublicGateway implements OnGatewayConnection, OnModuleInit, OnModuleDestroy {
   private subs: Subscription[] = [];
   @WebSocketServer() private readonly ns!: Namespace;
@@ -100,7 +101,7 @@ export class PublicGateway implements OnGatewayConnection, OnModuleInit, OnModul
 }
 
 /** Authenticated channel for organizers and officials. Every subscription and command is authorized. */
-@WebSocketGateway({ namespace: '/realtime', cors: { origin: origins(), credentials: false } })
+@WebSocketGateway({ namespace: '/realtime', cors })
 export class RealtimeGateway implements OnGatewayInit, OnGatewayConnection, OnModuleInit, OnModuleDestroy {
   private readonly logger = new Logger('Realtime');
   private subs: Subscription[] = [];
