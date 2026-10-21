@@ -236,7 +236,7 @@ export function JudgePanelPage() {
           <Notice tone="warning">Вы не назначены судьёй этого поединка: панель доступна только для просмотра.</Notice>
         </div>
       )}
-      <div className={styles.body}>
+      <main className={styles.body}>
         <div className={styles.arena}>
           <section className={styles.clockPanel} aria-label="Время">
             <span className={`${styles.phase} ${styles[`phase_${phase.tone}`]}`} role="status">
@@ -248,6 +248,9 @@ export function JudgePanelPage() {
             <span className={`${styles.clock} ${running ? styles.clockRunning : ""} ${live && remaining === 0 ? styles.clockZero : ""}`} aria-live="off">
               {formatClock(s.status === "ready" ? (def?.periods.durationSec ?? 0) * 1000 : remaining)}
             </span>
+            {s.viewer?.official && !actions.includes("timer") && (s.status === "ready" || live) && (
+              <p className={styles.clockHint}>Старт и время ведёт главный судья. Кнопки очков активны, пока идёт поединок.</p>
+            )}
             <div className={styles.clockControls}>
               {s.status === "ready" && (
                 <Button variant="primary" size="lg" disabled={!allowed("timer") || timerBusy} loading={timerBusy} onClick={() => exec({ type: "match.start" }, "Поединок начат")}>
@@ -332,7 +335,7 @@ export function JudgePanelPage() {
             }
           />
         </Card>
-      </div>
+      </main>
 
       <ConfirmDialog
         open={dialog?.kind === "penalty"}

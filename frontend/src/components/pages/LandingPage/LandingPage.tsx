@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Brand } from "@/src/components/layout/AppShell/AppShell";
 import { ButtonLink } from "@/src/components/ui/Button/Button";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
@@ -189,9 +189,11 @@ export function LandingPage() {
             </span>
             <h1 className={styles.title} style={{ "--i": 1 } as CSSProperties}>
               {["Турнир", "под", "контролем"].map((w, i) => (
-                <span key={w} className={styles.word} style={{ "--w": i } as CSSProperties}>
-                  {w}
-                </span>
+                <Fragment key={w}>
+                  <span className={styles.word} style={{ "--w": i } as CSSProperties}>
+                    {w}
+                  </span>{" "}
+                </Fragment>
               ))}
               <span className={`${styles.word} ${styles.gradientText}`} style={{ "--w": 3 } as CSSProperties}>
                 от заявки до результата

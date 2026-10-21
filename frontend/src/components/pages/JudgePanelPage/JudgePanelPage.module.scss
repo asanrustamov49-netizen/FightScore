@@ -112,6 +112,14 @@
   color: var(--fs-danger);
 }
 
+.clockHint {
+  margin: 0;
+  max-width: 30rem;
+  text-align: center;
+  font-size: var(--fs-text-sm);
+  color: var(--fs-text-muted);
+}
+
 .clockControls {
   display: flex;
   gap: 0.6rem;
