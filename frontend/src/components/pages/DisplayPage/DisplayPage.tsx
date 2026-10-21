@@ -31,7 +31,9 @@ export function DisplayPage() {
           {p.club ? ` · ${p.club}` : ""}
         </div>
       </div>
-      <div className={styles.score}>{p.score}</div>
+      <div className={styles.score} key={p.score}>
+        {p.score}
+      </div>
       <div className={styles.penalties}>
         {p.penalties.map((x) => (
           <span key={x.code} className={styles.penalty}>

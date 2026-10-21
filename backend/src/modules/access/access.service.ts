@@ -68,6 +68,34 @@ export class AccessService {
     }
   }
 
+  /**
+   * The one rule for changing a tournament and everything inside it (entries, judges, matches): the user manages it
+   * and it is not archived. An archive is read-only; `POST /tournaments/:id/unarchive` (plain `tournament.manage`)
+   * is the way back. Reads keep using `require`/`can` and are not affected.
+   */
+  async requireTournamentEdit(userId: string, tournamentId: string, db?: Db) {
+    await this.require(userId, 'tournament.manage', tournamentId, db);
+    await this.requireNotArchived(tournamentId, db);
+  }
+
+  async requireNotArchived(tournamentId: string, db?: Db) {
+    const t = await this.db.one<{ archived: boolean }>(`SELECT archived_at IS NOT NULL AS archived FROM tournaments WHERE id = $1`, [tournamentId], db);
+    if (!t) throw new AppError('NOT_FOUND', 'Турнир не найден');
+    if (t.archived) throw new AppError('CONFLICT', 'Турнир в архиве: изменения недоступны. Сначала верните его из архива.');
+  }
+
+  /**
+   * Line-up rule for matches: in a completed tournament no match (or bracket) is created and no match changes its
+   * participants or judges. Results, history and reads stay available; the tournament status itself can still change.
+   */
+  async requireMatchesOpen(tournamentId: string, db?: Db) {
+    const t = await this.db.one<{ status: string }>(`SELECT status FROM tournaments WHERE id = $1`, [tournamentId], db);
+    if (!t) throw new AppError('NOT_FOUND', 'Турнир не найден');
+    if (t.status === 'completed') {
+      throw new AppError('CONFLICT', 'Турнир завершён: новые поединки, изменение состава и судей недоступны. Чтобы продолжить, верните турниру статус «Идёт».');
+    }
+  }
+
   async officiatesAnyMatch(userId: string): Promise<boolean> {
     return !!(await this.db.one(`SELECT 1 FROM match_officials WHERE user_id = $1 LIMIT 1`, [userId]));
   }

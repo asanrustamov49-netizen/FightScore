@@ -4,7 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
-import { ErrorState, Loading } from "@/src/components/ui/Notice/Notice";
+import { ModeSwitch, type Mode } from "@/src/components/ui/ModeSwitch/ModeSwitch";
+import { ErrorState, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { resetTips } from "@/src/lib/onboarding";
 import { usePreferences, useResolvedTheme } from "@/src/lib/preferences";
 import { useSession } from "@/src/lib/session";
@@ -187,11 +188,33 @@ export function AppShell({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  if (loading) return <Loading label="Загрузка профиля…" />;
+  // Same frame as the loaded shell, so nothing jumps when the profile arrives.
+  if (loading)
+    return (
+      <div className={styles.shell} aria-busy="true">
+        <aside className={`${styles.sidebar} ${styles.sidebarSkeleton}`} aria-hidden>
+          <span className="fs-skeleton" style={{ width: "8.5rem", height: 28 }} />
+          {Array.from({ length: 7 }, (_, i) => (
+            <span key={i} className="fs-skeleton" style={{ height: 38, opacity: 1 - i * 0.08 }} />
+          ))}
+        </aside>
+        <div className={styles.content}>
+          <header className={styles.header} aria-hidden>
+            <span className="fs-skeleton" style={{ width: "2.2rem", height: 32, marginLeft: "auto", borderRadius: "50%" }} />
+          </header>
+          <main className={styles.main}>
+            <PageSkeleton cards={4} label="Загрузка профиля…" />
+          </main>
+        </div>
+      </div>
+    );
   if (error || !me) return <ErrorState message={error ?? "Нет данных профиля"} onRetry={refresh} />;
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
   const roleNames = [...new Set(me.roles.map((r) => r.name))].join(", ") || "Без роли";
+  // Judge panel and public display are open to everyone (the pages sign in and check access); the organizer's panel
+  // is shown to organizers only.
+  const modes: Mode[] = me.capabilities.organizer ? ["organizer", "judge", "display"] : ["judge", "display"];
   const visible = (n: NavItem) => (!n.permission || can(n.permission)) && (!n.capability || me.capabilities[n.capability]);
 
   return (
@@ -269,6 +292,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <span className={styles.headerBrand}>
             <Brand />
           </span>
+          <ModeSwitch modes={modes} className={styles.modeSwitch} />
           <div className={styles.headerActions}>
             <ThemeToggle />
             <UserMenu me={me} roleNames={roleNames} onLogout={logout} />

@@ -34,8 +34,14 @@
     transition: background-color 0.12s var(--fs-ease);
   }
 
+  // Scoreboard-style rows: light zebra, clear hover.
+  tbody tr:nth-child(even) {
+    background: color-mix(in srgb, var(--fs-surface-2) 35%, transparent);
+  }
+
   tbody tr:hover {
     background: var(--fs-surface-hover);
+    box-shadow: inset 3px 0 0 var(--fs-primary);
   }
 
   tbody tr:last-child td {

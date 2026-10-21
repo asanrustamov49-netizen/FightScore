@@ -1,0 +1,154 @@
+.scene {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #030407;
+  pointer-events: none;
+
+  svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    // Slow push-in, like a broadcast camera.
+    animation: push 40s ease-in-out infinite alternate;
+    transform-origin: 50% 62%;
+  }
+}
+
+@keyframes push {
+  to {
+    transform: scale(1.08);
+  }
+}
+
+.beam {
+  transform-box: fill-box;
+  transform-origin: 50% 0;
+  animation: sway 9s ease-in-out infinite alternate;
+}
+
+.beamSlow {
+  animation-duration: 13s;
+  animation-direction: alternate-reverse;
+}
+
+@keyframes sway {
+  from {
+    transform: rotate(-2.5deg);
+  }
+
+  to {
+    transform: rotate(2.5deg);
+  }
+}
+
+.beams {
+  mix-blend-mode: screen;
+  animation: pulse 7s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: 0.75;
+  }
+}
+
+.haze {
+  animation: drift 24s ease-in-out infinite alternate;
+}
+
+@keyframes drift {
+  to {
+    transform: translateX(60px);
+  }
+}
+
+// Fighters shift weight and circle a little.
+.left,
+.right {
+  transform-box: fill-box;
+}
+
+.left {
+  animation: stepL 3.2s ease-in-out infinite;
+}
+
+.right {
+  animation: stepR 3.2s ease-in-out infinite;
+}
+
+@keyframes stepL {
+  50% {
+    transform: translate(10px, -2px);
+  }
+}
+
+@keyframes stepR {
+  50% {
+    transform: translate(-6px, 1px);
+  }
+}
+
+.flashes circle {
+  opacity: 0;
+  animation: flash 6s linear infinite;
+}
+
+@keyframes flash {
+  0%,
+  92%,
+  100% {
+    opacity: 0;
+  }
+
+  94% {
+    opacity: 0.95;
+  }
+}
+
+.phones rect {
+  opacity: 0.85;
+  animation: glow 4s ease-in-out infinite;
+}
+
+@keyframes glow {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+// Each fighter keeps a guard and throws a quick jab now and then (opacity swap: snappy, no layout).
+.jab {
+  opacity: 0;
+  animation: jab 3.4s steps(1, end) infinite;
+  animation-delay: var(--d, 0s);
+}
+
+.guard {
+  animation: guard 3.4s steps(1, end) infinite;
+  animation-delay: var(--d, 0s);
+}
+
+@keyframes jab {
+  0%,
+  72%,
+  84% {
+    opacity: 0;
+  }
+
+  76% {
+    opacity: 1;
+  }
+}
+
+@keyframes guard {
+  0%,
+  72%,
+  84% {
+    opacity: 1;
+  }
+
+  76% {
+    opacity: 0;
+  }
+}

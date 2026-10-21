@@ -56,6 +56,8 @@ interface ReadRow extends StateRow {
   dup_seq: number | null;
   official_role: 'chief_judge' | 'judge' | null;
   official_permissions: string[] | null;
+  tournament_archived: boolean;
+  bracket_id: string | null;
   can_manage: boolean;
   sides: number;
   has_chief: boolean;
@@ -75,7 +77,9 @@ const READ_SQL = `
          mo.official_role, mo.permissions AS official_permissions,
          ${canManageSql('$3', 'm.tournament_id')} AS can_manage,
          (SELECT count(*)::int FROM match_participants WHERE match_id = $1) AS sides,
-         EXISTS (SELECT 1 FROM match_officials WHERE match_id = $1 AND official_role = 'chief_judge') AS has_chief
+         EXISTS (SELECT 1 FROM match_officials WHERE match_id = $1 AND official_role = 'chief_judge') AS has_chief,
+         (SELECT archived_at IS NOT NULL FROM tournaments WHERE id = m.tournament_id) AS tournament_archived,
+         m.bracket_id
     FROM match_states ms
     JOIN matches m ON m.id = ms.match_id
     LEFT JOIN match_officials mo ON mo.match_id = ms.match_id AND mo.user_id = $3
@@ -90,6 +94,10 @@ const WRITE_SQL = `
     UPDATE match_states SET version = $2, period_index = $3, timer_status = $4, timer_remaining_ms = $5,
            timer_started_at = CASE WHEN $6::double precision IS NULL THEN NULL ELSE to_timestamp($6::double precision / 1000) END,
            score = $7, penalties = $8, pending_result = $9, updated_at = now()
+      -- Writes only while the tournament is not archived. KEY SHARE waits for an archive holding FOR UPDATE and
+      -- re-checks the row after it commits, so a command read before archiving cannot land after it (updated = 0).
+      FROM (SELECT 1 FROM matches m JOIN tournaments t ON t.id = m.tournament_id
+             WHERE m.id = $1 AND t.archived_at IS NULL FOR KEY SHARE OF t) AS open_tournament
      WHERE match_id = $1 AND version = $10
     RETURNING match_id
   ), ev AS (
@@ -97,9 +105,22 @@ const WRITE_SQL = `
     SELECT $1, $2, $11, $12, $13, $14, $15, $16, $17, to_timestamp($18::double precision / 1000) FROM st
     RETURNING id
   ), mt AS (
-    UPDATE matches SET status = $19, cancel_reason = coalesce($20, cancel_reason), updated_at = now()
+    UPDATE matches SET status = $19, cancel_reason = coalesce($20, cancel_reason),
+           bracket_advanced_side = CASE WHEN $25::boolean AND bracket_id IS NOT NULL THEN $21::text ELSE bracket_advanced_side END,
+           updated_at = now()
      WHERE id = $1 AND status <> $19 AND EXISTS (SELECT 1 FROM st)
     RETURNING id
+  ), adv AS (
+    -- Bracket: on confirmation the winner takes their place in the next round, in the same statement as the result.
+    INSERT INTO match_participants (match_id, side, tournament_athlete_id)
+    SELECT nm.id, CASE WHEN m.bracket_slot % 2 = 0 THEN 'red' ELSE 'blue' END, mp.tournament_athlete_id
+      FROM st
+      JOIN matches m ON m.id = $1
+      JOIN matches nm ON nm.bracket_id = m.bracket_id AND nm.bracket_round = m.bracket_round + 1 AND nm.bracket_slot = m.bracket_slot / 2
+      JOIN match_participants mp ON mp.match_id = m.id AND mp.side = $21::text
+     WHERE $25::boolean AND m.bracket_id IS NOT NULL AND m.bracket_advanced_side IS NULL AND nm.status = 'prepared'
+    ON CONFLICT DO NOTHING
+    RETURNING match_id
   ), res AS (
     INSERT INTO match_results (match_id, winner_side, outcome_code, final_state, participants_snapshot, rule_profile_version_id, final_event_seq, confirmed_by)
     SELECT $1, $21, $22, $23,
@@ -116,7 +137,8 @@ const WRITE_SQL = `
     RETURNING match_id
   )
   SELECT (SELECT count(*) FROM st)::int AS updated, (SELECT count(*) FROM ev)::int AS events,
-         (SELECT count(*) FROM mt)::int AS status_changed, (SELECT count(*) FROM res)::int AS results`;
+         (SELECT count(*) FROM mt)::int AS status_changed, (SELECT count(*) FROM res)::int AS results,
+         (SELECT match_id FROM adv LIMIT 1) AS advanced_to`;
 
 const OPTIMISTIC_ATTEMPTS = 2;
 
@@ -124,6 +146,8 @@ interface Attempt {
   result: CommandResult;
   next?: MatchState;
   now?: number;
+  /** Bracket: the next match that received this match's winner in the same write. */
+  advancedTo?: string | null;
 }
 
 @Injectable()
@@ -132,6 +156,14 @@ export class ScoringService implements OnApplicationBootstrap, OnModuleDestroy {
   private readonly timers = new Map<string, NodeJS.Timeout>();
   /** Emits after the write is committed; subscribers (Realtime) never see uncommitted state. */
   readonly changes = new Subject<MatchChanged>();
+
+  /**
+   * Announces a committed change made outside a command (bracket advancement, walkover). Subscribers re-read the
+   * snapshot; the version is not used by them (participants changed, the state version did not).
+   */
+  notifyChanged(matchId: string) {
+    this.changes.next({ matchId, version: -1 });
+  }
 
   constructor(
     private readonly db: DatabaseService,
@@ -182,6 +214,8 @@ export class ScoringService implements OnApplicationBootstrap, OnModuleDestroy {
       // Strictly after the write is durable: realtime subscribers never see uncommitted state.
       this.schedule(matchId, outcome.next!, outcome.now!);
       this.changes.next({ matchId, version: outcome.result.version });
+      // The next bracket match got a participant in the same transaction: its subscribers (judges, displays) refresh too.
+      if (outcome.advancedTo) this.notifyChanged(outcome.advancedTo);
     }
     return outcome.result;
   }
@@ -199,6 +233,16 @@ export class ScoringService implements OnApplicationBootstrap, OnModuleDestroy {
       const row = await this.db.one<ReadRow>(READ_SQL, [matchId, env.commandId, user?.id ?? null], db);
       if (!row) throw new AppError('NOT_FOUND', 'Поединок не найден');
       if (row.dup_seq !== null) return { result: { status: 'duplicate', version: row.version } };
+      // Archived tournaments are read-only for people (same rule as AccessService.requireTournamentEdit);
+      // the system timer may still close a period that was running when the tournament was archived.
+      // A bracket pair is cancelled only once both athletes are known; a future pair waiting for winners cannot be
+      // cancelled, so a winner is never moved into a cancelled match. Known pair cancelled → organizer walkover.
+      if (command.type === 'match.cancel' && row.bracket_id && row.sides < 2) {
+        throw new AppError('CONFLICT', 'Поединок сетки можно отменить, когда известны оба соперника');
+      }
+      if (user && row.tournament_archived) {
+        throw new AppError('CONFLICT', 'Турнир в архиве: изменения недоступны. Сначала верните его из архива.');
+      }
 
       const def = await this.matches.definition(row.rule_profile_version_id);
       const actorRole = this.authorize(row, def, command, user);
@@ -208,7 +252,7 @@ export class ScoringService implements OnApplicationBootstrap, OnModuleDestroy {
       const next = await this.decide(row, def, command, now);
       const version = row.version + 1;
       const confirm = command.type === 'result.confirm';
-      let written: { updated: number };
+      let written: { updated: number; advanced_to: string | null };
       try {
         written = (await this.db.one(WRITE_SQL, [
           matchId,
@@ -244,7 +288,7 @@ export class ScoringService implements OnApplicationBootstrap, OnModuleDestroy {
         }
         throw err;
       }
-      if (written.updated === 1) return { result: { status: 'accepted', version }, next, now };
+      if (written.updated === 1) return { result: { status: 'accepted', version }, next, now, advancedTo: written.advanced_to };
       if (!retryable) throw this.versionConflict(row.version + 1);
       return 'lost';
     }

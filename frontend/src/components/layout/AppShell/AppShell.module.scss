@@ -31,7 +31,7 @@
   flex-direction: column;
   gap: 1.4rem;
   padding: 1.15rem 0.9rem 0.9rem;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--fs-blue-soft) 35%, transparent), transparent 18rem), var(--fs-bg-raised);
+  background: var(--fs-bg-raised);
   border-right: 1px solid var(--fs-border);
 
   @include up($bp-md) {
@@ -102,7 +102,6 @@
 
 .mark {
   flex: none;
-  filter: drop-shadow(0 4px 10px rgba(47, 107, 255, 0.35));
   transition: transform var(--fs-dur-slow) var(--fs-ease-spring);
 }
 
@@ -169,9 +168,8 @@
 }
 
 .active {
-  background: linear-gradient(90deg, var(--fs-blue-soft), color-mix(in srgb, var(--fs-blue-soft) 30%, transparent));
+  background: var(--fs-red-soft);
   color: var(--fs-text);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--fs-info-border) 60%, transparent);
 
   &::before {
     content: "";
@@ -181,17 +179,16 @@
     bottom: 0.6rem;
     width: 3px;
     border-radius: 0 3px 3px 0;
-    background: var(--fs-blue-strong);
-    box-shadow: 0 0 12px var(--fs-blue);
+    background: var(--fs-primary);
   }
 
   svg,
   &:hover svg {
-    color: var(--fs-blue-strong);
+    color: var(--fs-red-strong);
   }
 
   &:hover {
-    background: linear-gradient(90deg, var(--fs-blue-soft), color-mix(in srgb, var(--fs-blue-soft) 30%, transparent));
+    background: var(--fs-red-soft);
   }
 }
 
@@ -300,12 +297,18 @@
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.75rem;
   min-height: 3.75rem;
   padding: 0.55rem 1rem;
+  // Installed app on iOS draws under the status bar.
+  padding-top: max(0.55rem, env(safe-area-inset-top));
   border-bottom: 1px solid var(--fs-border);
-  background: var(--fs-header-bg);
+  // Red | blue corner stripe: the one brand accent of the shell.
+  background:
+    linear-gradient(90deg, var(--fs-red) 50%, var(--fs-blue) 50%) top / 100% 2px no-repeat,
+    var(--fs-header-bg);
   position: sticky;
   top: 0;
   z-index: 20;
@@ -319,6 +322,17 @@
 .menuButton {
   @include up($bp-md) {
     display: none;
+  }
+}
+
+// Mode switch: centred in the header on wide screens, its own full-width row on phones.
+.modeSwitch {
+  @include down($bp-sm) {
+    order: 3;
+  }
+
+  @include up($bp-md) {
+    margin-left: auto;
   }
 }
 
@@ -541,4 +555,14 @@
   transition:
     opacity var(--fs-dur-slow) var(--fs-ease),
     visibility 0s;
+}
+
+// Loading frame: the sidebar shape without links (desktop only; phones keep the drawer closed).
+.sidebarSkeleton {
+  gap: 0.6rem;
+  padding-top: 1.4rem;
+
+  > :first-child {
+    margin-bottom: 1rem;
+  }
 }

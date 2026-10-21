@@ -99,6 +99,7 @@
 }
 
 .score {
+  animation: scoreHit 0.45s var(--fs-ease-out);
   font-family: var(--fs-font-display);
   font-size: clamp(6rem, 22vw, 40rem);
   font-weight: 800;
@@ -242,5 +243,13 @@
 
   &:hover {
     opacity: 1;
+  }
+}
+
+// Score changed (the element is re-keyed by its value): a short punch, no delay for the next input.
+@keyframes scoreHit {
+  0% {
+    transform: scale(1.22);
+    filter: brightness(1.6);
   }
 }

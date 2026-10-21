@@ -10,6 +10,68 @@
   animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out);
 }
 
+// Event-poster variant: dark band, arena on the right, text on the left.
+.hero {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  align-items: flex-end;
+  min-height: 11rem;
+  padding: 1.5rem 1.25rem;
+  border-radius: var(--fs-radius-lg);
+  border: 1px solid var(--fs-border);
+  background: #07090c;
+  color: var(--fs-text);
+  box-shadow: var(--fs-shadow);
+
+  @include up($bp-md) {
+    min-height: 15rem;
+    padding: 2.25rem 2.25rem 2rem;
+  }
+
+  .title {
+    font-size: clamp(1.9rem, 1.2rem + 2.4vw, 3rem);
+  }
+
+  .text,
+  .actions {
+    position: relative;
+  }
+}
+
+.heroArt {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+
+  > div {
+    left: 30%;
+    animation: fs-fade 1.2s var(--fs-ease) both;
+  }
+
+  // Readable text on the left, the fight visible on the right.
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(90deg, #07090c 36%, rgba(7, 9, 12, 0.75) 60%, rgba(7, 9, 12, 0.2) 100%),
+      linear-gradient(0deg, rgba(7, 9, 12, 0.8), transparent 45%);
+  }
+
+  // Narrow screens: the fight sits behind the text, dimmed but visible.
+  @include down($bp-md) {
+    > div {
+      left: 0;
+      opacity: 0.6;
+    }
+
+    &::after {
+      background: linear-gradient(180deg, rgba(7, 9, 12, 0.55), rgba(7, 9, 12, 0.92) 75%);
+    }
+  }
+}
+
 .text {
   min-width: 0;
   flex: 1 1 22rem;
@@ -61,6 +123,9 @@
 }
 
 .title {
+  // Broadcast-style headline: condensed caps.
+  text-transform: uppercase;
+  letter-spacing: 0.005em;
   display: flex;
   align-items: center;
   gap: 0.6rem 0.75rem;
@@ -141,6 +206,21 @@
   display: grid;
   gap: var(--fs-gap);
   grid-template-columns: repeat(auto-fill, minmax(min(100%, var(--min, 280px)), 1fr));
+
+  // Cards rise one after another (first six; the rest come with the sixth).
+  > * {
+    animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out) both;
+  }
+
+  @for $i from 2 through 6 {
+    > :nth-child(#{$i}) {
+      animation-delay: #{($i - 1) * 50}ms;
+    }
+  }
+
+  > :nth-child(n + 7) {
+    animation-delay: 300ms;
+  }
 }
 
 .toolbar {

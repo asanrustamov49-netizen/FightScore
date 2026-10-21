@@ -72,6 +72,8 @@ export function useMatchChannel(matchId: string) {
   const versionRef = useRef(-1);
   const inFlightRef = useRef(new Set<string>());
   const queueRef = useRef(new Map<string, { body: object; resolve: (o: CommandOutcome) => void; type: string; sentAt: number }>());
+  // Lets a lost-ack retry call the current flush without the callback referring to itself.
+  const retryRef = useRef<(socket: Socket) => void>(() => undefined);
 
   const accept = useCallback((snap: MatchSnapshot) => {
     if (snap.version < versionRef.current) return;
@@ -94,10 +96,17 @@ export function useMatchChannel(matchId: string) {
         })
         .catch(() => {
           inFlightRef.current.delete(commandId);
-          // No ack (timeout or disconnect): keep it queued; it is resent with the same commandId on reconnect.
+          // No ack: keep it queued with the same commandId (the server answers "duplicate" if it was applied).
+          // Disconnected → resent on reconnect; still connected (slow server, lost ack) → retried here, otherwise
+          // it would wait for a reconnect that may never come and stay "pending" forever.
+          if (socket.connected) setTimeout(() => socket.connected && retryRef.current(socket), 1500);
         });
     }
   }, []);
+
+  useEffect(() => {
+    retryRef.current = flush;
+  }, [flush]);
 
   useEffect(() => {
     const socket = io(`${realtimeBase()}/realtime`, {

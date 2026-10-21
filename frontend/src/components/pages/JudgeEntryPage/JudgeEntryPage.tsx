@@ -51,7 +51,7 @@ export function JudgeEntryPage() {
   };
 
   return (
-    <PublicFrame icon="judge" title="Вход судьи" lead="Учётную запись судьи выдаёт организатор турнира. Самостоятельно получить права судьи нельзя.">
+    <PublicFrame icon="judge" photo="/auth/octagon-ref.webp" title="Вход судьи" lead="Учётную запись судьи выдаёт организатор турнира. Самостоятельно получить права судьи нельзя.">
       {error && <Notice tone="error">{error}</Notice>}
       {me === undefined ? (
         <Loading />

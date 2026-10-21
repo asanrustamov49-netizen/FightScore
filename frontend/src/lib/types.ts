@@ -214,7 +214,9 @@ export interface MatchSnapshot {
   id: string;
   matchNumber: number;
   status: MatchStatus;
-  tournament: { id: string; name: string };
+  tournament: { id: string; name: string; status: TournamentSummary["status"]; archived: boolean };
+  /** Set for a bracket match: its pairs are fixed by the bracket. */
+  bracket: { id: string; round: number; slot: number; advancedSide: Side | null } | null;
   discipline: { id: string; name: string };
   scheduledAt: string | null;
   cancelReason: string | null;
@@ -294,4 +296,36 @@ export interface OfficialCandidate {
   display_name: string;
   tournament_account: boolean;
   roles: string[];
+}
+
+export interface BracketSide {
+  entry_id: string;
+  first_name: string;
+  last_name: string;
+  country_code: string;
+}
+
+export interface BracketMatch {
+  id: string;
+  round: number;
+  slot: number;
+  match_number: number;
+  status: MatchStatus;
+  score: Record<Side, number>;
+  /** Confirmed result. */
+  winner_side: Side | null;
+  /** Who went through: the confirmed winner or an organizer's walkover. */
+  advanced_side: Side | null;
+  sides: Partial<Record<Side, BracketSide>> | null;
+}
+
+export interface Bracket {
+  id: string;
+  discipline_id: string;
+  discipline_name: string;
+  size: number;
+  format: "single_elimination";
+  rule_profile_name: string;
+  rule_version_number: number;
+  matches: BracketMatch[];
 }

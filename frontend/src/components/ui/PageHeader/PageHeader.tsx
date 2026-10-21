@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon } from "../Icon/Icon";
+import { ArenaScene } from "@/src/components/widgets/ArenaScene/ArenaScene";
 import styles from "./PageHeader.module.scss";
 
 export interface Crumb {
@@ -16,11 +17,18 @@ interface Props {
   description?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
+  /** Event-poster header: dark band with the arena behind (overview, tournament page). */
+  hero?: boolean;
 }
 
-export function PageHeader({ title, breadcrumbs, eyebrow, description, meta, actions }: Props) {
+export function PageHeader({ title, breadcrumbs, eyebrow, description, meta, actions, hero }: Props) {
   return (
-    <div className={styles.header}>
+    <div className={`${styles.header} ${hero ? styles.hero : ""}`} data-theme={hero ? "dark" : undefined}>
+      {hero && (
+        <div className={styles.heroArt}>
+          <ArenaScene />
+        </div>
+      )}
       <div className={styles.text}>
         {breadcrumbs?.length ? (
           <nav aria-label="Навигационная цепочка" className={styles.crumbs}>

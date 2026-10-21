@@ -1,5 +1,8 @@
 .button {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  touch-action: manipulation;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -56,26 +59,53 @@
 }
 
 .lg {
-  min-height: 3.25rem;
-  padding: 0 1.6rem;
-  font-size: 1.02rem;
-  border-radius: var(--fs-radius);
+  min-height: 3rem;
+  padding: 0 1.5rem;
+  font-size: 1rem;
 }
 
-.primary,
-.blue {
-  background: var(--fs-blue);
+.primary {
+  background: var(--fs-primary);
   background-image: var(--fs-primary-grad);
   color: var(--fs-on-accent);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
     var(--fs-shadow-primary);
 
+  // Light sweep across the button on hover (transform only).
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.28) 50%, transparent 65%);
+    transform: translateX(-110%);
+    pointer-events: none;
+  }
+
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      background-image: var(--fs-primary-grad-hover);
+      transform: translateY(-1px);
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.2),
+        0 12px 28px -10px rgba(229, 51, 63, 0.75);
+
+      &::after {
+        transform: translateX(110%);
+        transition: transform 0.7s var(--fs-ease-out);
+      }
+    }
+  }
+}
+
+.blue {
+  background: var(--fs-blue);
+  color: var(--fs-on-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+
   &:hover:not(:disabled) {
-    background-image: var(--fs-primary-grad-hover);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.22),
-      0 10px 26px -8px rgba(47, 107, 255, 0.85);
+    background: var(--fs-blue-strong);
   }
 }
 
@@ -85,9 +115,12 @@
   color: var(--fs-text);
   box-shadow: var(--fs-highlight);
 
-  &:hover:not(:disabled) {
-    border-color: var(--fs-focus);
-    background: var(--fs-surface-hover);
+  @media (hover: hover) {
+    &:hover:not(:disabled) {
+      border-color: color-mix(in srgb, var(--fs-text) 35%, var(--fs-border-strong));
+      background: var(--fs-surface-hover);
+      transform: translateY(-1px);
+    }
   }
 }
 

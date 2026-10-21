@@ -1,0 +1,79 @@
+@use "../../../styles/mixins" as *;
+
+.switch {
+  display: inline-flex;
+  gap: 0.25rem;
+  padding: 0.25rem;
+  border-radius: 999px;
+  background: var(--fs-surface-2);
+  border: 1px solid var(--fs-border);
+}
+
+.item {
+  --mode: var(--fs-blue);
+  // Solid fills for the active pill: white text stays above 4.5:1 in both themes.
+  --mode-solid: #1f4fd6;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  min-height: 2.75rem;
+  padding: 0 0.95rem;
+  border-radius: 999px;
+  font-size: var(--fs-text-sm);
+  font-weight: 650;
+  color: var(--fs-text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  transition:
+    color var(--fs-dur-fast) ease,
+    background-color var(--fs-dur-fast) ease;
+
+  &:hover {
+    color: var(--fs-text);
+    background: var(--fs-surface-hover);
+  }
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  svg {
+    color: var(--mode);
+  }
+}
+
+.judge {
+  --mode: var(--fs-red);
+  --mode-solid: #c9202d;
+}
+
+.display {
+  --mode: var(--fs-success);
+  --mode-solid: #16804a;
+}
+
+.active,
+.active:hover {
+  color: #fff;
+  background: var(--mode-solid);
+  box-shadow: 0 4px 14px -6px var(--mode-solid);
+
+  svg {
+    color: inherit;
+  }
+}
+
+// Phones: equal thirds across the full width, labels stay readable.
+@include down($bp-sm) {
+  .switch {
+    display: flex;
+    width: 100%;
+  }
+
+  .item {
+    flex: 1;
+    padding: 0 0.5rem;
+  }
+}

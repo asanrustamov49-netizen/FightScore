@@ -172,6 +172,7 @@
 }
 
 .score {
+  animation: scoreHit 0.45s var(--fs-ease-out);
   font-family: var(--fs-font-display);
   font-size: clamp(4rem, 10vw, 7rem);
   font-weight: 800;
@@ -249,4 +250,61 @@
   display: flex;
   gap: 1rem;
   flex-wrap: wrap;
+}
+
+// Score changed (the element is re-keyed by its value): a short punch, no delay for the next input.
+@keyframes scoreHit {
+  0% {
+    transform: scale(1.22);
+    filter: brightness(1.6);
+  }
+}
+
+// State of the bout next to the clock: readable at arm's length, colour backed by a word.
+.phase {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2rem;
+  padding: 0.2rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+
+  &::before {
+    content: "";
+    width: 0.6rem;
+    height: 0.6rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+}
+
+.phase_idle,
+.phase_done {
+  background: var(--fs-surface-2);
+  border-color: var(--fs-border-strong);
+  color: var(--fs-text-muted);
+}
+
+.phase_run {
+  background: var(--fs-success-soft);
+  border-color: var(--fs-success-border);
+  color: var(--fs-success);
+}
+
+.phase_pause,
+.phase_await {
+  background: var(--fs-warning-soft);
+  border-color: var(--fs-warning-border);
+  color: var(--fs-warning);
+}
+
+.phase_zero {
+  background: var(--fs-red-soft);
+  border-color: var(--fs-danger-border);
+  color: var(--fs-red-strong);
 }

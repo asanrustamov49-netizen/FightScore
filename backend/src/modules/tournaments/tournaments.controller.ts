@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { AppError } from '../../common/errors.js';
 import { hashPassword, MIN_PASSWORD_LENGTH } from '../../common/password.js';
 import { isoDate, login, parse, trimmed, uuid } from '../../common/validation.js';
-import { DatabaseService } from '../../database/database.service.js';
+import { DatabaseService, type Db } from '../../database/database.service.js';
 import { AccessService } from '../access/access.service.js';
 import { AuditService } from '../audit/audit.service.js';
 import { ClientIp, CurrentUser } from '../auth/auth.guard.js';
@@ -21,6 +21,14 @@ const tournamentSchema = z
   .refine((t) => t.endsOn >= t.startsOn, { message: 'Дата окончания раньше даты начала', path: ['endsOn'] });
 
 const registerSchema = z.object({ athleteId: uuid, registrationNumber: z.string().trim().max(40).nullish() });
+
+const bulkRegisterSchema = z.object({
+  athleteIds: z
+    .array(uuid)
+    .min(1, 'Выберите хотя бы одного спортсмена')
+    .max(200, 'За один раз можно зарегистрировать не больше 200 спортсменов')
+    .refine((ids) => new Set(ids).size === ids.length, 'Спортсмен выбран дважды'),
+});
 
 const judgeSchema = z.object({
   login,
@@ -124,7 +132,7 @@ export class TournamentsController {
 
   @Put('tournaments/:id')
   async update(@CurrentUser() user: SessionUser, @Param('id') id: string, @Body() body: unknown, @ClientIp() ip: string | null) {
-    await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
+    await this.access.requireTournamentEdit(user.id, parse(uuid, id));
     const t = parse(tournamentSchema, body);
     return this.db.tx(async (c) => {
       const row = await this.db.one(
@@ -146,33 +154,130 @@ export class TournamentsController {
   async archive(@CurrentUser() user: SessionUser, @Param('id') id: string, @ClientIp() ip: string | null) {
     await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
     await this.db.tx(async (c) => {
+      // Every judge command writes under KEY SHARE on this row and only while the tournament is not archived
+      // (ScoringService WRITE_SQL). FOR UPDATE here waits for commands in flight and blocks new ones, so the check
+      // below sees their outcome and no match can start or change once the tournament is archived.
+      await c.query(`SELECT id FROM tournaments WHERE id = $1 FOR UPDATE`, [id]);
+      const active = await this.db.one<{ n: number }>(
+        `SELECT count(*)::int AS n FROM matches WHERE tournament_id = $1 AND status IN ('live', 'awaiting_confirmation')`,
+        [id],
+        c,
+      );
+      if (active && active.n > 0) {
+        throw new AppError('CONFLICT', `Нельзя отправить в архив: идёт или ждёт подтверждения поединков — ${active.n}. Завершите или отмените их, затем повторите.`, {
+          activeMatches: active.n,
+        });
+      }
       await this.db.query(`UPDATE tournaments SET archived_at = coalesce(archived_at, now()), updated_at = now() WHERE id = $1`, [id], c);
       await this.audit.record({ actorUserId: user.id, action: 'tournament.archive', entityType: 'tournament', entityId: id, tournamentId: id, ip }, c);
     });
     return { ok: true };
   }
 
+  /** Brings an archived tournament back to the current list. Its data were never changed by archiving. */
+  @Post('tournaments/:id/unarchive')
+  async unarchive(@CurrentUser() user: SessionUser, @Param('id') id: string, @ClientIp() ip: string | null) {
+    await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
+    await this.db.tx(async (c) => {
+      await this.db.query(`UPDATE tournaments SET archived_at = NULL, updated_at = now() WHERE id = $1`, [id], c);
+      await this.audit.record({ actorUserId: user.id, action: 'tournament.unarchive', entityType: 'tournament', entityId: id, tournamentId: id, ip }, c);
+    });
+    return { ok: true };
+  }
+
+  /** Registers one athlete (optionally with a number). Same checks as the bulk endpoint, through registerEntries. */
   @Post('tournaments/:id/athletes')
   async register(@CurrentUser() user: SessionUser, @Param('id') id: string, @Body() body: unknown, @ClientIp() ip: string | null) {
-    await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
+    await this.access.requireTournamentEdit(user.id, parse(uuid, id));
     const r = parse(registerSchema, body);
     return this.db.tx(async (c) => {
-      const row = await this.db.one(
-        `INSERT INTO tournament_athletes (tournament_id, athlete_id, registration_number) VALUES ($1,$2,$3) RETURNING id`,
-        [id, r.athleteId, r.registrationNumber || null],
-        c,
-      );
-      await this.audit.record(
-        { actorUserId: user.id, action: 'tournament.register_athlete', entityType: 'tournament_athlete', entityId: row.id, tournamentId: id, data: r, ip },
-        c,
-      );
-      return row;
+      const res = await this.registerEntries(c, user.id, id, [{ athleteId: r.athleteId, registrationNumber: r.registrationNumber || null }], ip);
+      const skip = res.skipped[0];
+      if (skip?.reason === 'not_found') throw new AppError('NOT_FOUND', 'Спортсмен не найден');
+      if (skip) throw new AppError('CONFLICT', 'Спортсмен уже зарегистрирован в этом турнире');
+      // Same response shape as before: the new entry id.
+      return { id: res.registered[0].entryId };
     });
+  }
+
+  /**
+   * Registers several athletes at once. Valid ones are inserted in one transaction and the rest come back with a
+   * reason, so a partly invalid selection never loses the good part (see registerEntries).
+   */
+  @Post('tournaments/:id/athletes/bulk')
+  async registerMany(@CurrentUser() user: SessionUser, @Param('id') id: string, @Body() body: unknown, @ClientIp() ip: string | null) {
+    await this.access.requireTournamentEdit(user.id, parse(uuid, id));
+    const { athleteIds } = parse(bulkRegisterSchema, body);
+    return this.db.tx((c) => this.registerEntries(c, user.id, id, athleteIds.map((athleteId) => ({ athleteId, registrationNumber: null })), ip));
+  }
+
+  /**
+   * The one place with the registration rules, shared by the single and bulk endpoints. Each athlete must exist,
+   * not be archived, be visible to the user by the same rule as GET /athletes, and not be registered yet. An athlete
+   * the user cannot see is reported exactly like a missing one, so other organizers' bases are not revealed.
+   * Runs inside the caller's transaction; the tournament row is locked so parallel registrations do not interleave.
+   */
+  private async registerEntries(c: Db, userId: string, tournamentId: string, entries: { athleteId: string; registrationNumber: string | null }[], ip: string | null) {
+    await c.query(`SELECT id FROM tournaments WHERE id = $1 FOR UPDATE`, [tournamentId]);
+    const all = await this.access.can(userId, 'athlete.manage', null, c);
+    const visible = all ? null : await this.access.visibleTournamentIds(userId);
+    const ids = entries.map((e) => e.athleteId);
+    const rows = await this.db.query<{ id: string; ok: boolean; registered: boolean }>(
+      `SELECT a.id,
+              ($2::boolean OR $4::uuid[] IS NULL OR a.created_by = $3
+               OR EXISTS (SELECT 1 FROM tournament_athletes v WHERE v.athlete_id = a.id AND v.tournament_id = ANY($4))) AS ok,
+              EXISTS (SELECT 1 FROM tournament_athletes ta WHERE ta.athlete_id = a.id AND ta.tournament_id = $5) AS registered
+         FROM athletes a
+        WHERE a.id = ANY($1::uuid[]) AND a.archived_at IS NULL`,
+      [ids, all, userId, visible, tournamentId],
+      c,
+    );
+    const found = new Map(rows.map((r) => [r.id, r]));
+    const skipped: { athleteId: string; reason: 'not_found' | 'already_registered' }[] = [];
+    const toInsert: { athleteId: string; registrationNumber: string | null }[] = [];
+    for (const e of entries) {
+      const r = found.get(e.athleteId);
+      if (!r || !r.ok) skipped.push({ athleteId: e.athleteId, reason: 'not_found' });
+      else if (r.registered) skipped.push({ athleteId: e.athleteId, reason: 'already_registered' });
+      else toInsert.push(e);
+    }
+
+    // ON CONFLICT covers a duplicate athlete only; a taken registration number still fails the whole statement,
+    // which is the old behaviour of the single endpoint (bulk never sends numbers).
+    const inserted = toInsert.length
+      ? await this.db.query<{ id: string; athlete_id: string }>(
+          `INSERT INTO tournament_athletes (tournament_id, athlete_id, registration_number)
+           SELECT $1, x.athlete_id, x.registration_number FROM unnest($2::uuid[], $3::text[]) AS x(athlete_id, registration_number)
+           ON CONFLICT (tournament_id, athlete_id) DO NOTHING
+           RETURNING id, athlete_id`,
+          [tournamentId, toInsert.map((e) => e.athleteId), toInsert.map((e) => e.registrationNumber)],
+          c,
+        )
+      : [];
+    const insertedIds = new Set(inserted.map((r) => r.athlete_id));
+    for (const e of toInsert) if (!insertedIds.has(e.athleteId)) skipped.push({ athleteId: e.athleteId, reason: 'already_registered' });
+
+    for (const r of inserted) {
+      const e = toInsert.find((x) => x.athleteId === r.athlete_id);
+      await this.audit.record(
+        {
+          actorUserId: userId,
+          action: 'tournament.register_athlete',
+          entityType: 'tournament_athlete',
+          entityId: r.id,
+          tournamentId,
+          data: { athleteId: r.athlete_id, registrationNumber: e?.registrationNumber ?? null, bulk: entries.length > 1 },
+          ip,
+        },
+        c,
+      );
+    }
+    return { registered: inserted.map((r) => ({ athleteId: r.athlete_id, entryId: r.id })), skipped };
   }
 
   @Delete('tournaments/:id/athletes/:entryId')
   async unregister(@CurrentUser() user: SessionUser, @Param('id') id: string, @Param('entryId') entryId: string, @ClientIp() ip: string | null) {
-    await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
+    await this.access.requireTournamentEdit(user.id, parse(uuid, id));
     await this.db.tx(async (c) => {
       const used = await this.db.one(`SELECT 1 FROM match_participants WHERE tournament_athlete_id = $1 LIMIT 1`, [entryId], c);
       if (used) throw new AppError('CONFLICT', 'Спортсмен уже участвует в поединке; снимите его с поединка или отметьте как выбывшего');
@@ -208,7 +313,7 @@ export class TournamentsController {
   /** Creates a judge account that exists only for this tournament. Visitors can never grant themselves this. */
   @Post('tournaments/:id/judges')
   async createJudge(@CurrentUser() user: SessionUser, @Param('id') id: string, @Body() body: unknown, @ClientIp() ip: string | null) {
-    await this.access.require(user.id, 'tournament.manage', parse(uuid, id));
+    await this.access.requireTournamentEdit(user.id, parse(uuid, id));
     const j = parse(judgeSchema, body);
     const hash = await hashPassword(j.password);
     return this.db.tx(async (c) => {

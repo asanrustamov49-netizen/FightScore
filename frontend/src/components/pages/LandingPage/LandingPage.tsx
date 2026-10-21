@@ -1,12 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { Brand } from "@/src/components/layout/AppShell/AppShell";
 import { ButtonLink } from "@/src/components/ui/Button/Button";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
+import { RolePaths } from "@/src/components/widgets/RolePaths/RolePaths";
+import { ImageCarousel } from "@/src/components/widgets/ImageCarousel/ImageCarousel";
+import { DemoBoard } from "@/src/components/widgets/DemoBoard/DemoBoard";
 import { InstallPrompt } from "@/src/components/widgets/InstallPrompt/InstallPrompt";
 import { api, currentUser } from "@/src/lib/api";
+import { useReveal } from "@/src/lib/reveal";
 import type { AuthOptions, Me } from "@/src/lib/types";
 import styles from "./LandingPage.module.scss";
 
@@ -18,6 +21,12 @@ const FEATURES: { icon: IconName; title: string; text: string }[] = [
   { icon: "history", title: "Журнал действий", text: "Каждое подтверждённое действие записывается. Исправление добавляет запись, а не стирает историю." },
   { icon: "wifiOff", title: "Без интернета", text: "Сервер работает на компьютере организатора в локальной сети. Потеря связи сразу видна на экранах." },
 ];
+
+const SECTIONS = [
+  { id: "roles", label: "Куда перейти" },
+  { id: "features", label: "Возможности" },
+  { id: "how", label: "Как это работает" },
+] as const;
 
 const STEPS: { title: string; text: string }[] = [
   { title: "Создайте турнир", text: "Название, даты, место и дисциплины. Начните с черновика." },
@@ -31,6 +40,45 @@ const STEPS: { title: string; text: string }[] = [
 export function LandingPage() {
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [registration, setRegistration] = useState(false);
+  const [section, setSection] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const menuPanel = useRef<HTMLDivElement>(null);
+
+  // Phone section menu: closes on Esc (focus back to the button), on an outside tap and after choosing a section.
+  useEffect(() => {
+    if (!menuOpen) return;
+    menuPanel.current?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      menuButton.current?.focus();
+    };
+    const onDown = (e: PointerEvent) => {
+      const t = e.target as Node;
+      if (!menuPanel.current?.contains(t) && !menuButton.current?.contains(t)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onDown);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onDown);
+    };
+  }, [menuOpen]);
+  useReveal();
+
+  // Highlights the section in view in the header nav (one observer, no scroll handlers).
+  useEffect(() => {
+    const els = SECTIONS.map((x) => document.getElementById(x.id)).filter((e): e is HTMLElement => !!e);
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) setSection(e.target.id);
+      },
+      { rootMargin: "-45% 0px -50% 0px" },
+    );
+    els.forEach((e) => io.observe(e));
+    return () => io.disconnect();
+  }, []);
 
   useEffect(() => {
     currentUser<Me>().then(setMe, () => setMe(null));
@@ -64,11 +112,29 @@ export function LandingPage() {
       <header className={styles.top}>
         <Brand />
         <nav className={styles.topNav} aria-label="Разделы страницы">
-          <a href="#features">Возможности</a>
-          <a href="#how">Как это работает</a>
-          <a href="#roles">Для кого</a>
+          {SECTIONS.map((x) => (
+            <a
+              key={x.id}
+              href={`#${x.id}`}
+              className={section === x.id ? styles.navActive : undefined}
+              aria-current={section === x.id ? "location" : undefined}
+            >
+              {x.label}
+            </a>
+          ))}
         </nav>
         <div className={styles.who}>
+          <button
+            ref={menuButton}
+            type="button"
+            className={styles.menuButton}
+            aria-expanded={menuOpen}
+            aria-controls="landing-sections"
+            aria-label={menuOpen ? "Закрыть меню разделов" : "Открыть меню разделов"}
+            onClick={() => setMenuOpen((o) => !o)}
+          >
+            <Icon name={menuOpen ? "close" : "menu"} size={20} />
+          </button>
           {me ? (
             <>
               <span className={styles.whoName}>{me.user.displayName}</span>
@@ -91,17 +157,45 @@ export function LandingPage() {
             )
           )}
         </div>
+        {menuOpen && (
+          <div ref={menuPanel} id="landing-sections" className={styles.mobileNav}>
+            <nav aria-label="Разделы страницы">
+              {SECTIONS.map((x) => (
+                <a
+                  key={x.id}
+                  href={`#${x.id}`}
+                  className={section === x.id ? styles.mobileNavActive : undefined}
+                  aria-current={section === x.id ? "location" : undefined}
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {x.label}
+                  <Icon name="chevron" size={18} />
+                </a>
+              ))}
+            </nav>
+          </div>
+        )}
       </header>
 
       <main className={styles.main}>
-        <section className={styles.hero}>
+        <section className={styles.hero} data-theme="dark">
+          <div className={styles.heroBg}>
+            <ImageCarousel captions={false} indicators={false} interval={6000} sizes="100vw" />
+          </div>
           <div className={styles.heroText}>
             <span className={styles.chip} style={{ "--i": 0 } as CSSProperties}>
               <Icon name="bolt" size={15} />
               Судейство и табло для единоборств
             </span>
             <h1 className={styles.title} style={{ "--i": 1 } as CSSProperties}>
-              Турнир под контролем — <span className={styles.gradientText}>от заявки до результата</span>
+              {["Турнир", "под", "контролем"].map((w, i) => (
+                <span key={w} className={styles.word} style={{ "--w": i } as CSSProperties}>
+                  {w}
+                </span>
+              ))}
+              <span className={`${styles.word} ${styles.gradientText}`} style={{ "--w": 3 } as CSSProperties}>
+                от заявки до результата
+              </span>
             </h1>
             <p className={styles.lead} style={{ "--i": 2 } as CSSProperties}>
               FightScore помогает организаторам соревнований по единоборствам вести турниры, участников и поединки. Судья управляет счётом с ноутбука, зрители
@@ -110,22 +204,67 @@ export function LandingPage() {
             <div className={styles.ctas} style={{ "--i": 3 } as CSSProperties}>
               {primaryCta}
             </div>
-            <div className={styles.quick} style={{ "--i": 4 } as CSSProperties}>
-              <Link href="/judge">
-                <Icon name="judge" size={16} />Я судья
-              </Link>
-              <Link href="/display">
-                <Icon name="display" size={16} />
-                Открыть табло
-              </Link>
-            </div>
+            <a href="#roles" className={styles.quick} style={{ "--i": 4 } as CSSProperties}>
+              <Icon name="judge" size={16} />
+              Судья или табло? Выберите свой вход ниже
+              <Icon name="chevron" size={16} />
+            </a>
           </div>
 
-          <HeroVisual />
+          <div className={styles.visual}>
+            <DemoBoard />
+          </div>
+        </section>
+
+        <section id="roles" className={styles.section} aria-labelledby="roles-title">
+          <div className={styles.sectionHead} data-reveal>
+            <span className={styles.kicker}>Куда перейти</span>
+            <h2 id="roles-title" className={styles.sectionTitle}>
+              Выберите, кто вы сегодня
+            </h2>
+            <p className={styles.sectionLead}>Три входа, у каждого свой экран. Переключиться можно в любой момент: кнопки «Организатор · Судья · Табло» всегда наверху.</p>
+          </div>
+          <RolePaths
+            paths={[
+              {
+                key: "organizer",
+                title: "Организатор",
+                who: "Готовит турнир, участников, поединки и судей.",
+                steps: ["Создайте турнир", "Добавьте спортсменов и поединки", "Назначьте судей и табло"],
+                cta: me?.capabilities.organizer ? "Открыть панель" : registration ? "Создать аккаунт" : "Войти",
+                href: me?.capabilities.organizer ? "/dashboard" : startHref,
+                icon: "organizer",
+                photo: "/auth/arena-lights.webp",
+                focus: "50% 45%",
+              },
+              {
+                key: "judge",
+                title: "Судья",
+                who: "Ведёт счёт и время назначенного поединка с ноутбука.",
+                steps: ["Войдите под учётной записью судьи", "Выберите свой поединок", "Ведите счёт крупными кнопками"],
+                cta: "Мои поединки",
+                href: "/judge",
+                icon: "judge",
+                photo: "/auth/octagon-ref.webp",
+                focus: "62% 50%",
+              },
+              {
+                key: "display",
+                title: "Табло",
+                who: "Показывает зрителям счёт и таймер на телевизоре.",
+                steps: ["Получите ссылку у организатора", "Откройте её на ТВ или экране", "Табло обновляется само"],
+                cta: "Открыть табло",
+                href: "/display",
+                icon: "display",
+                photo: "/auth/red-vs-blue.webp",
+                focus: "55% 35%",
+              },
+            ]}
+          />
         </section>
 
         <section id="features" className={styles.section} aria-labelledby="features-title">
-          <div className={styles.sectionHead}>
+          <div className={styles.sectionHead} data-reveal>
             <span className={styles.kicker}>Возможности</span>
             <h2 id="features-title" className={styles.sectionTitle}>
               Всё, что нужно для проведения соревнований
@@ -134,7 +273,7 @@ export function LandingPage() {
           </div>
           <div className={styles.features}>
             {FEATURES.map((f, i) => (
-              <article key={f.title} className={styles.feature} style={{ "--i": i } as CSSProperties}>
+              <article key={f.title} className={styles.feature} data-reveal style={{ "--i": i } as CSSProperties}>
                 <span className={styles.featureIcon}>
                   <Icon name={f.icon} size={22} />
                 </span>
@@ -146,7 +285,7 @@ export function LandingPage() {
         </section>
 
         <section id="how" className={styles.section} aria-labelledby="how-title">
-          <div className={styles.sectionHead}>
+          <div className={styles.sectionHead} data-reveal>
             <span className={styles.kicker}>Как это работает</span>
             <h2 id="how-title" className={styles.sectionTitle}>
               Пять шагов до подтверждённого результата
@@ -154,7 +293,7 @@ export function LandingPage() {
           </div>
           <ol className={styles.steps}>
             {STEPS.map((s, i) => (
-              <li key={s.title} className={styles.step} style={{ "--i": i } as CSSProperties}>
+              <li key={s.title} className={styles.step} data-reveal style={{ "--i": i } as CSSProperties}>
                 <span className={styles.stepNum}>{i + 1}</span>
                 <strong>{s.title}</strong>
                 <span>{s.text}</span>
@@ -163,55 +302,10 @@ export function LandingPage() {
           </ol>
         </section>
 
-        <section id="roles" className={styles.section} aria-labelledby="roles-title">
-          <div className={styles.sectionHead}>
-            <span className={styles.kicker}>Для кого</span>
-            <h2 id="roles-title" className={styles.sectionTitle}>
-              Каждый видит только своё
-            </h2>
-            <p className={styles.sectionLead}>Права проверяет сервер: организатор, судья и зритель работают в одной системе, не мешая друг другу.</p>
-          </div>
-          <div className={styles.roles}>
-            <RoleCard
-              icon="organizer"
-              tone="blue"
-              title="Организатор"
-              text="Создаёт турниры, регистрирует участников, собирает поединки и назначает судей."
-              points={["Только свои турниры", "Аккаунты судей турнира", "Результаты и журнал"]}
-              action={
-                me?.capabilities.organizer ? (
-                  <ButtonLink href="/dashboard" variant="primary">
-                    Открыть панель
-                  </ButtonLink>
-                ) : (
-                  <ButtonLink href={startHref} variant="primary">
-                    {registration ? "Создать аккаунт" : "Войти"}
-                  </ButtonLink>
-                )
-              }
-            />
-            <RoleCard
-              icon="judge"
-              tone="red"
-              title="Судья"
-              text="Входит под учётной записью от организатора и ведёт назначенный поединок."
-              points={["Только назначенные поединки", "Счёт и нарушения по правилам", "Каждое действие подтверждено"]}
-              action={<ButtonLink href="/judge">Мои поединки</ButtonLink>}
-            />
-            <RoleCard
-              icon="display"
-              tone="green"
-              title="Зритель"
-              text="Смотрит табло на телевизоре или экране: имена, углы, счёт, таймер и статус."
-              points={["Без входа, по ссылке", "Обновляется само", "Только просмотр"]}
-              action={<ButtonLink href="/display">Открыть табло</ButtonLink>}
-            />
-          </div>
-        </section>
 
         <InstallPrompt />
 
-        <section className={styles.final} aria-labelledby="final-title">
+        <section className={styles.final} aria-labelledby="final-title" data-reveal>
           <div>
             <h2 id="final-title">Готовы провести первый турнир?</h2>
             <p>Создайте турнир и следуйте подсказкам: они покажут, что осталось подготовить к первому поединку.</p>
@@ -227,95 +321,3 @@ export function LandingPage() {
   );
 }
 
-function RoleCard({
-  icon,
-  tone,
-  title,
-  text,
-  points,
-  action,
-}: {
-  icon: IconName;
-  tone: "blue" | "red" | "green";
-  title: string;
-  text: string;
-  points: string[];
-  action: React.ReactNode;
-}) {
-  return (
-    <article className={`${styles.role} ${styles[tone]}`}>
-      <span className={styles.roleIcon}>
-        <Icon name={icon} size={24} />
-      </span>
-      <h3>{title}</h3>
-      <p>{text}</p>
-      <ul>
-        {points.map((p) => (
-          <li key={p}>
-            <Icon name="check" size={16} />
-            {p}
-          </li>
-        ))}
-      </ul>
-      <div className={styles.roleAction}>{action}</div>
-    </article>
-  );
-}
-
-/**
- * Illustration of the product, drawn with HTML/CSS (no images, works offline).
- * It is a static picture: no real athletes, scores or matches.
- */
-function HeroVisual() {
-  return (
-    <div className={styles.visual} aria-hidden>
-      <div className={styles.board}>
-        <div className={styles.boardTop}>
-          <span className={styles.boardLabel}>Пример табло</span>
-          <span className={styles.boardPeriod}>Период 2 из 3</span>
-          <span className={styles.boardLive}>
-            <i />
-            Идёт
-          </span>
-        </div>
-        <div className={styles.boardBody}>
-          <div className={`${styles.corner} ${styles.cornerRed}`}>
-            <span className={styles.cornerName}>Красный угол</span>
-            <span className={styles.cornerScore}>5</span>
-          </div>
-          <div className={styles.clock}>
-            <span>02:41</span>
-            <small>осталось</small>
-          </div>
-          <div className={`${styles.corner} ${styles.cornerBlue}`}>
-            <span className={styles.cornerName}>Синий угол</span>
-            <span className={styles.cornerScore}>3</span>
-          </div>
-        </div>
-      </div>
-
-      <div className={`${styles.float} ${styles.floatJudge}`}>
-        <span className={styles.floatTitle}>
-          <Icon name="judge" size={15} />
-          Судейская панель
-        </span>
-        <div className={styles.padRow}>
-          <span className={styles.padRed}>+1</span>
-          <span className={styles.padRed}>+2</span>
-          <span className={styles.padBlue}>+1</span>
-          <span className={styles.padBlue}>+2</span>
-        </div>
-      </div>
-
-      <div className={`${styles.float} ${styles.floatLog}`}>
-        <span className={styles.logIcon}>
-          <Icon name="check" size={14} />
-        </span>
-        <span>
-          <strong>Сервер подтвердил</strong>
-          <small>+2 красному углу · записано в журнал</small>
-        </span>
-      </div>
-    </div>
-  );
-}

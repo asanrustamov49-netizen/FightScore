@@ -17,10 +17,9 @@
   gap: 1.1rem;
   padding: 2rem 1.5rem;
   border-radius: var(--fs-radius-lg);
-  border: 1px solid var(--fs-info-border);
+  border: 1px solid var(--fs-border);
   background:
-    radial-gradient(40rem 22rem at 100% 0%, var(--fs-glow-blue), transparent 65%),
-    radial-gradient(30rem 18rem at 0% 100%, var(--fs-glow-red), transparent 65%),
+    linear-gradient(90deg, var(--fs-red) 50%, var(--fs-blue) 50%) top / 100% 3px no-repeat,
     var(--fs-surface);
   box-shadow: var(--fs-highlight), var(--fs-shadow);
   overflow: hidden;

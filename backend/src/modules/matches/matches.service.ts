@@ -111,7 +111,9 @@ export class MatchesService {
   async snapshot(matchId: string, db?: Db) {
     const m = await this.db.one(
       `SELECT m.id, m.match_number, m.status, m.tournament_id, m.scheduled_at, m.cancel_reason,
-              t.name AS tournament_name, d.id AS discipline_id, d.name AS discipline_name,
+              t.name AS tournament_name, t.status AS tournament_status, (t.archived_at IS NOT NULL) AS tournament_archived,
+              m.bracket_id, m.bracket_round, m.bracket_slot, m.bracket_advanced_side,
+              d.id AS discipline_id, d.name AS discipline_name,
               rpv.id AS rule_version_id, rpv.version_number AS rule_version_number, rpv.is_demo, rp.name AS rule_profile_name,
               rpv.definition, floor(extract(epoch FROM now()) * 1000)::bigint AS server_time,
               ms.version, ms.period_index, ms.timer_status, ms.timer_remaining_ms,
@@ -152,7 +154,9 @@ export class MatchesService {
       id: m.id,
       matchNumber: m.match_number,
       status: m.status as MatchStatus,
-      tournament: { id: m.tournament_id, name: m.tournament_name },
+      tournament: { id: m.tournament_id, name: m.tournament_name, status: m.tournament_status, archived: m.tournament_archived },
+      // Bracket position: pairs are fixed by the bracket, the winner moves on by the server (matches/bracket.ts).
+      bracket: m.bracket_id ? { id: m.bracket_id, round: m.bracket_round, slot: m.bracket_slot, advancedSide: m.bracket_advanced_side } : null,
       discipline: { id: m.discipline_id, name: m.discipline_name },
       scheduledAt: m.scheduled_at,
       cancelReason: m.cancel_reason,

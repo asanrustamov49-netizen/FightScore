@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useState } from "react";
 import { DemoBadge, MatchStatusBadge } from "@/src/components/ui/Badge/Badge";
@@ -23,12 +24,16 @@ export function MatchDetailPage() {
   const { id } = useParams<{ id: string }>();
   const match = useResource<MatchSnapshot>(`/matches/${id}`);
   const events = useResource<MatchEvent[]>(`/matches/${id}/events`);
-  const canManage = !!match.data?.viewer?.canManage;
+  // The server refuses changes in an archived tournament, and line-up/judge changes in a completed one;
+  // the page offers only what will be accepted.
+  const canManage = !!match.data?.viewer?.canManage && !match.data?.tournament.archived;
+  const lineupOpen = canManage && match.data?.tournament.status !== "completed";
+  const inBracket = !!match.data?.bracket;
   const prepared = match.data?.status === "prepared";
-  const tour = useResource<TournamentDetail>(canManage && prepared ? `/tournaments/${match.data!.tournament.id}` : null);
-  const rules = useResource<RuleVersion[]>(canManage && prepared ? "/rule-versions" : null);
+  const tour = useResource<TournamentDetail>(lineupOpen && !inBracket && prepared ? `/tournaments/${match.data!.tournament.id}` : null);
+  const rules = useResource<RuleVersion[]>(lineupOpen && !inBracket && prepared ? "/rule-versions" : null);
   const officials = useResource<{ id: string; login: string; display_name: string }[]>(
-    canManage && (prepared || match.data?.status === "ready") ? `/tournaments/${match.data!.tournament.id}/officials` : null,
+    lineupOpen && (prepared || match.data?.status === "ready") ? `/tournaments/${match.data!.tournament.id}/officials` : null,
   );
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -110,7 +115,7 @@ export function MatchDetailPage() {
                 Готов к старту
               </Button>
             )}
-            {canManage && !["completed", "cancelled"].includes(m.status) && (
+            {canManage && !["completed", "cancelled"].includes(m.status) && !(m.bracket && !(m.participants.red && m.participants.blue)) && (
               <Button variant="danger" onClick={() => setCancelOpen(true)}>
                 Отменить поединок
               </Button>
@@ -121,9 +126,24 @@ export function MatchDetailPage() {
       <Stack>
         {error && <Notice tone="error">{error}</Notice>}
         {m.status === "cancelled" && <Notice tone="warning">Поединок отменён. Причина: {m.cancelReason}</Notice>}
-        {canManage && m.status === "prepared" && (
+        {m.tournament.archived && <Notice tone="info">Турнир в архиве: поединок доступен только для просмотра.</Notice>}
+        {!m.tournament.archived && m.viewer?.canManage && m.tournament.status === "completed" && !["completed", "cancelled"].includes(m.status) && (
+          <Notice tone="info" title="Турнир завершён">
+            Состав и судей этого поединка менять нельзя. Чтобы продолжить подготовку, верните турниру статус «Идёт» на его странице.
+          </Notice>
+        )}
+        {m.bracket && (
+          <Notice tone="info" title={`Поединок сетки · круг ${m.bracket.round}`}>
+            Пары задаёт сетка, поэтому состав здесь не меняется. Победитель перейдёт в следующий круг автоматически после подтверждения результата.
+            {m.bracket.advancedSide && !m.result?.winner_side && " Проход в следующий круг назначен организатором."}{" "}
+            <Link href={`/tournaments/${m.tournament.id}?tab=bracket`}>Открыть сетку</Link>
+          </Notice>
+        )}
+        {lineupOpen && m.status === "prepared" && (
           <Notice tone="info" title="Подготовка поединка">
-            Выберите спортсменов и версию правил, назначьте главного судью, затем нажмите «Готов к старту». После этого состав и правила фиксируются.
+            {inBracket
+              ? "Назначьте главного судью, затем нажмите «Готов к старту»: спортсмены появятся здесь, когда пройдут предыдущий круг."
+              : "Выберите спортсменов и версию правил, назначьте главного судью, затем нажмите «Готов к старту». После этого состав и правила фиксируются."}
           </Notice>
         )}
         {m.status === "completed" && m.result && (
@@ -142,7 +162,7 @@ export function MatchDetailPage() {
               </span>
               {corner("blue")}
             </section>
-            {canManage && prepared && tour.data && rules.data && (
+            {lineupOpen && !inBracket && prepared && tour.data && rules.data && (
               <Card title="Состав и правила" subtitle="Менять можно, пока поединок не отмечен как готовый к старту">
                 <MatchSetupForm
                   disciplines={tour.data.disciplines}
@@ -162,7 +182,7 @@ export function MatchDetailPage() {
                 />
               </Card>
             )}
-            {canManage && officials.data && (
+            {lineupOpen && officials.data && (
               <Card title="Судьи" subtitle="Права судей определяются выбранным профилем правил">
                 <OfficialsEditor
                   candidates={officials.data}

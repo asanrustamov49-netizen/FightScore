@@ -36,7 +36,7 @@
     bottom: 0;
     height: 2px;
     border-radius: 2px 2px 0 0;
-    background: var(--fs-blue-strong);
+    background: var(--fs-primary);
     transform: scaleX(0);
     transition: transform var(--fs-dur) var(--fs-ease-out);
   }
@@ -60,8 +60,8 @@
   }
 
   .count {
-    background: var(--fs-blue-soft);
-    color: var(--fs-blue-strong);
+    background: var(--fs-red-soft);
+    color: var(--fs-red-strong);
   }
 }
 

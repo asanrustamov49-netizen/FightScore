@@ -52,6 +52,7 @@ export function DisplayEntryPage() {
   return (
     <PublicFrame
       icon="display"
+      photo="/auth/arena-lights.webp"
       title="Открыть табло"
       lead="Экран трансляции для телевизора: только просмотр, вход не нужен. Ссылку на табло даёт организатор турнира."
     >

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Badge, DemoBadge, MatchStatusBadge } from "@/src/components/ui/Badge/Badge";
 import { PublicFrame } from "@/src/components/layout/PublicFrame/PublicFrame";
 import { Button, ButtonLink } from "@/src/components/ui/Button/Button";
@@ -43,6 +43,14 @@ export function JudgePanelPage() {
   const [winner, setWinner] = useState<Side | "">("");
   const [timeInput, setTimeInput] = useState("");
   const [checked, setChecked] = useState(false);
+  // Last send time per identical command: a second tap within 350 ms is an accident on a touch screen.
+  const lastSent = useRef(new Map<string, number>());
+  const tooSoon = useCallback((key: string) => {
+    const now = Date.now();
+    if (now - (lastSent.current.get(key) ?? 0) < 350) return true;
+    lastSent.current.set(key, now);
+    return false;
+  }, []);
 
   // Reload the log whenever the confirmed version changes.
   useEffect(() => {
@@ -59,7 +67,7 @@ export function JudgePanelPage() {
   if (!s) {
     if (!linkError) return <Loading label="Подключение к поединку…" />;
     return (
-      <PublicFrame icon="lock" title="Поединок недоступен" lead={linkError}>
+      <PublicFrame icon="lock" photo="/auth/octagon-ref.webp" title="Поединок недоступен" lead={linkError}>
         <Notice tone="info">
           Судейская панель открывается только назначенным судьям и организатору турнира. Проверьте, что вы вошли под своей учётной записью,
           или попросите организатора назначить вас на этот поединок.
@@ -80,7 +88,13 @@ export function JudgePanelPage() {
   const live = s.status === "live";
   const running = s.clock.running;
 
+  const isTimerCommand = (type: string) => type === "match.start" || type.startsWith("timer.");
+  const timerBusy = pending.some((p) => isTimerCommand(p.type));
+
   async function exec(command: { type: string } & Record<string, unknown>, ok?: string) {
+    // The clock has one state: while a start/stop is on its way, a second tap would only be rejected as invalid.
+    if (isTimerCommand(command.type) && timerBusy) return false;
+    if (tooSoon(JSON.stringify(command))) return false;
     const res = await send(command);
     if (!res.ok) setMessage({ tone: "error", text: res.error?.message ?? "Команда отклонена" });
     else if (ok) setMessage({ tone: "success", text: ok });
@@ -106,7 +120,7 @@ export function JudgePanelPage() {
               {p && <Flag code={p.country_code} name={p.country_name} />} {p?.club_name}
             </div>
           </div>
-          <div className={styles.score} aria-label={`Счёт: ${s.state.score[side]}`}>
+          <div className={styles.score} key={s.state.score[side]} aria-label={`Счёт: ${s.state.score[side]}`}>
             {s.state.score[side]}
           </div>
         </div>
@@ -164,6 +178,22 @@ export function JudgePanelPage() {
 
   const penaltyDef = dialog?.kind === "penalty" ? def?.penalties.find((p) => p.code === dialog.code) : undefined;
   const endMethod = def?.endMethods.find((m) => m.code === endCode);
+  // One clear word for the state of the bout, next to the clock.
+  const phase: { label: string; tone: "idle" | "run" | "pause" | "zero" | "await" | "done" } =
+    s.status === "completed"
+      ? { label: "Завершён", tone: "done" }
+      : s.status === "cancelled"
+        ? { label: "Отменён", tone: "done" }
+        : s.status === "awaiting_confirmation"
+          ? { label: "Ждёт подтверждения", tone: "await" }
+          : live
+            ? running
+              ? { label: "Идёт", tone: "run" }
+              : remaining === 0
+                ? { label: "Время вышло", tone: "zero" }
+                : { label: "Пауза", tone: "pause" }
+            : { label: "Не начат", tone: "idle" };
+  const resultEnd = def?.endMethods.find((m) => m.code === s.result?.outcome_code);
   const pendingEnd = s.state.pendingResult;
   const pendingEndLabel = def?.endMethods.find((m) => m.code === pendingEnd?.outcomeCode)?.label;
 
@@ -209,6 +239,9 @@ export function JudgePanelPage() {
       <div className={styles.body}>
         <div className={styles.arena}>
           <section className={styles.clockPanel} aria-label="Время">
+            <span className={`${styles.phase} ${styles[`phase_${phase.tone}`]}`} role="status">
+              {phase.label}
+            </span>
             <span className={styles.period}>
               {s.state.periodIndex ? `Период ${s.state.periodIndex} из ${def?.periods.count ?? "?"}` : "Поединок не начат"}
             </span>
@@ -217,18 +250,18 @@ export function JudgePanelPage() {
             </span>
             <div className={styles.clockControls}>
               {s.status === "ready" && (
-                <Button variant="primary" size="lg" disabled={!allowed("timer")} onClick={() => exec({ type: "match.start" }, "Поединок начат")}>
+                <Button variant="primary" size="lg" disabled={!allowed("timer") || timerBusy} loading={timerBusy} onClick={() => exec({ type: "match.start" }, "Поединок начат")}>
                   Начать поединок
                 </Button>
               )}
               {live && (
                 <>
                   {running ? (
-                    <Button variant="primary" size="lg" disabled={!allowed("timer")} onClick={() => exec({ type: "timer.stop" })}>
+                    <Button variant="primary" size="lg" disabled={!allowed("timer") || timerBusy} loading={timerBusy} onClick={() => exec({ type: "timer.stop" })}>
                       ❚❚ Пауза
                     </Button>
                   ) : (
-                    <Button variant="primary" size="lg" disabled={!allowed("timer") || remaining === 0} onClick={() => exec({ type: "timer.start" })}>
+                    <Button variant="primary" size="lg" disabled={!allowed("timer") || remaining === 0 || timerBusy} loading={timerBusy} onClick={() => exec({ type: "timer.start" })}>
                       ▶ Старт
                     </Button>
                   )}
@@ -257,7 +290,12 @@ export function JudgePanelPage() {
                 {pendingEnd.winnerSide && <>, победитель — {personName(s.participants[pendingEnd.winnerSide])}</>}
               </span>
             ) : s.status === "completed" ? (
-              <span>Результат подтверждён и сохранён.</span>
+              <span>
+                Результат подтверждён и сохранён:{" "}
+                <strong>{s.result?.winner_side ? `победитель — ${personName(s.participants[s.result.winner_side])}` : "без победителя"}</strong>
+                {resultEnd && `, ${resultEnd.label}`}. Счёт {s.state.score.red} : {s.state.score.blue}.
+                {s.bracket && s.result?.winner_side && " Победитель переходит в следующий круг сетки."}
+              </span>
             ) : (
               <span>Завершение поединка требует подтверждения главного судьи.</span>
             )}

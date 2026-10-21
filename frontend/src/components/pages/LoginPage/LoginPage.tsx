@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Brand } from "@/src/components/layout/AppShell/AppShell";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
+import { ImageCarousel } from "@/src/components/widgets/ImageCarousel/ImageCarousel";
 import { AuthForm } from "@/src/components/widgets/AuthForm/AuthForm";
 import styles from "./LoginPage.module.scss";
 
@@ -27,9 +28,16 @@ export function LoginPage() {
   return (
     <div className={styles.page}>
       <aside className={styles.side} aria-label="О FightScore">
-        <Brand />
+        <ImageCarousel />
+        <span className={styles.shade} aria-hidden />
+        <div className={styles.sideTop}>
+          <Brand />
+        </div>
         <div className={styles.sideBody}>
-          <h2 className={styles.sideTitle}>Судейство, счёт и табло — в одной системе</h2>
+          <span className={styles.kicker}>Fight night · судейство · табло</span>
+          <h2 className={styles.sideTitle}>
+            Каждый бой — <span>под контролем</span>
+          </h2>
           <ul className={styles.points}>
             {POINTS.map((p) => (
               <li key={p.title}>
@@ -44,15 +52,12 @@ export function LoginPage() {
             ))}
           </ul>
         </div>
-        <div className={styles.miniBoard} aria-hidden>
-          <span className={styles.miniRed}>3</span>
-          <span className={styles.miniClock}>01:58</span>
-          <span className={styles.miniBlue}>2</span>
-        </div>
       </aside>
 
       <main className={styles.main}>
         <div className={styles.mobileBrand}>
+          <ImageCarousel captions={false} />
+          <span className={styles.mobileShade} aria-hidden />
           <Brand />
         </div>
         <div className={styles.panel}>

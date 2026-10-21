@@ -4,11 +4,11 @@
 // Themes are switched by data-* attributes on <html>, set before first paint (app/layout.tsx, lib/preferences.tsx).
 
 :root {
-  --fs-radius-xs: 6px;
-  --fs-radius-sm: 10px;
-  --fs-radius: 14px;
-  --fs-radius-lg: 20px;
-  --fs-radius-xl: 28px;
+  --fs-radius-xs: 4px;
+  --fs-radius-sm: 6px;
+  --fs-radius: 10px;
+  --fs-radius-lg: 14px;
+  --fs-radius-xl: 18px;
 
   --fs-font: "Segoe UI Variable Text", "Segoe UI", "Inter", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
   --fs-font-display: "Bahnschrift", "DIN Alternate", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
@@ -45,123 +45,130 @@
 }
 
 // Dark: the default broadcast look (PROJECT_SPEC §14). Also usable on any element (TV display).
+// Graphite neutrals, one blue accent for actions; red and blue are reserved for the corners.
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --fs-bg: #050a15;
-  --fs-bg-raised: #08101f;
-  --fs-surface: #0d1729;
-  --fs-surface-2: #14213a;
-  --fs-surface-hover: #122038;
-  --fs-surface-glass: rgba(13, 23, 41, 0.72);
-  --fs-border: #1b2a45;
-  --fs-border-strong: #2b4069;
-  --fs-text: #eef3fc;
-  --fs-text-muted: #9badc9;
-  --fs-text-faint: #6b7f9f;
+  --fs-bg: #0a0c10;
+  --fs-bg-raised: #0e1116;
+  --fs-surface: #13171e;
+  --fs-surface-2: #1a1f28;
+  --fs-surface-hover: #181c24;
+  --fs-surface-glass: rgba(19, 23, 30, 0.92);
+  --fs-border: #232934;
+  --fs-border-strong: #333b49;
+  --fs-text: #eceff4;
+  --fs-text-muted: #9aa3b2;
+  --fs-text-faint: #6b7382;
 
   --fs-red: #e5333f;
-  --fs-red-strong: #ff4d5a;
-  --fs-red-soft: rgba(229, 51, 63, 0.15);
+  --fs-red-strong: #ff5560;
+  --fs-red-soft: rgba(229, 51, 63, 0.14);
   --fs-blue: #2f6bff;
-  --fs-blue-strong: #6b97ff;
-  --fs-blue-soft: rgba(47, 107, 255, 0.15);
-  --fs-cyan: #3fd0ff;
+  --fs-blue-strong: #6e98ff;
+  --fs-blue-soft: rgba(47, 107, 255, 0.14);
+  --fs-cyan: #6e98ff;
   --fs-accent: #f2b33d;
   --fs-success: #35c97a;
   --fs-warning: #f2b33d;
   --fs-danger: #ff6464;
   --fs-focus: #7ea6ff;
 
-  --fs-primary-grad: linear-gradient(180deg, #4a82ff 0%, #2a62f2 100%);
-  --fs-primary-grad-hover: linear-gradient(180deg, #5a8eff 0%, #336cff 100%);
-  --fs-brand-grad: linear-gradient(120deg, #3fd0ff 0%, #2f6bff 55%, #7b5cff 100%);
+  // Kept as tokens so components stay unchanged; flat on purpose.
+  // Red is the action and event accent (UFC-style); blue stays the second corner.
+  --fs-primary: #e5333f;
+  --fs-primary-grad: linear-gradient(180deg, #f0404b, #d72a36);
+  --fs-primary-grad-hover: linear-gradient(180deg, #ff4f5a, #e5333f);
+  --fs-brand-grad: linear-gradient(90deg, #ff5560, #e5333f);
+  --fs-corner-stripe: linear-gradient(90deg, var(--fs-red) 50%, var(--fs-blue) 50%);
 
-  --fs-success-soft: rgba(47, 191, 113, 0.14);
-  --fs-warning-soft: rgba(242, 179, 61, 0.14);
-  --fs-danger-soft: rgba(255, 92, 92, 0.12);
+  --fs-success-soft: rgba(47, 191, 113, 0.13);
+  --fs-warning-soft: rgba(242, 179, 61, 0.13);
+  --fs-danger-soft: rgba(255, 92, 92, 0.11);
   --fs-info-text: #cddcff;
   --fs-success-text: #b9f0d1;
   --fs-warning-text: #ffe2a8;
   --fs-danger-text: #ffc4c4;
-  --fs-info-border: rgba(91, 140, 255, 0.45);
-  --fs-success-border: rgba(53, 201, 122, 0.45);
-  --fs-warning-border: rgba(242, 179, 61, 0.45);
-  --fs-danger-border: rgba(255, 100, 100, 0.45);
+  --fs-info-border: rgba(110, 152, 255, 0.4);
+  --fs-success-border: rgba(53, 201, 122, 0.4);
+  --fs-warning-border: rgba(242, 179, 61, 0.4);
+  --fs-danger-border: rgba(255, 100, 100, 0.4);
 
-  --fs-row-border: rgba(27, 42, 69, 0.85);
-  --fs-header-bg: rgba(5, 10, 21, 0.78);
-  --fs-backdrop: rgba(2, 6, 14, 0.72);
-  --fs-pattern: rgba(143, 180, 255, 0.07);
-  --fs-glow-red: rgba(229, 51, 63, 0.13);
-  --fs-glow-blue: rgba(47, 107, 255, 0.2);
-  --fs-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.045);
-  --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.35);
-  --fs-shadow: 0 10px 30px -8px rgba(0, 0, 0, 0.55), 0 2px 6px rgba(0, 0, 0, 0.25);
-  --fs-shadow-lg: 0 30px 70px -20px rgba(0, 0, 0, 0.7), 0 8px 20px -6px rgba(0, 0, 0, 0.35);
-  --fs-shadow-primary: 0 8px 22px -8px rgba(47, 107, 255, 0.75);
-  --fs-ring: 0 0 0 4px rgba(126, 166, 255, 0.22);
-  --fs-skeleton: rgba(143, 180, 255, 0.07);
-  --fs-skeleton-shine: rgba(143, 180, 255, 0.14);
+  --fs-row-border: #1e232d;
+  --fs-header-bg: rgba(10, 12, 16, 0.9);
+  --fs-backdrop: rgba(0, 0, 0, 0.66);
+  --fs-pattern: rgba(160, 175, 200, 0.06);
+  --fs-glow-red: rgba(229, 51, 63, 0.06);
+  --fs-glow-blue: rgba(47, 107, 255, 0.07);
+  --fs-highlight: inset 0 0 0 0 transparent;
+  --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --fs-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.6);
+  --fs-shadow-lg: 0 24px 56px -18px rgba(0, 0, 0, 0.75);
+  --fs-shadow-primary: 0 8px 22px -10px rgba(229, 51, 63, 0.8);
+  --fs-ring: 0 0 0 3px rgba(126, 166, 255, 0.3);
+  --fs-skeleton: rgba(160, 175, 200, 0.07);
+  --fs-skeleton-shine: rgba(160, 175, 200, 0.13);
 }
 
 [data-theme="light"] {
   color-scheme: light;
-  --fs-bg: #f3f6fb;
-  --fs-bg-raised: #f8fafd;
+  --fs-bg: #f4f5f7;
+  --fs-bg-raised: #fafbfc;
   --fs-surface: #ffffff;
-  --fs-surface-2: #eef2f8;
-  --fs-surface-hover: #f5f8fc;
-  --fs-surface-glass: rgba(255, 255, 255, 0.78);
-  --fs-border: #e0e6f0;
-  --fs-border-strong: #c3cfe1;
-  --fs-text: #0b1528;
-  --fs-text-muted: #4a5873;
-  --fs-text-faint: #6c7a92;
+  --fs-surface-2: #f0f2f5;
+  --fs-surface-hover: #f7f8fa;
+  --fs-surface-glass: rgba(255, 255, 255, 0.95);
+  --fs-border: #e1e4e9;
+  --fs-border-strong: #c9ced6;
+  --fs-text: #111418;
+  --fs-text-muted: #4f5866;
+  --fs-text-faint: #737c8a;
 
   --fs-red: #d42a37;
   --fs-red-strong: #b81f2b;
-  --fs-red-soft: rgba(212, 42, 55, 0.1);
-  --fs-blue: #2457e6;
-  --fs-blue-strong: #1c48c9;
-  --fs-blue-soft: rgba(36, 87, 230, 0.09);
-  --fs-cyan: #0a8fc2;
+  --fs-red-soft: rgba(212, 42, 55, 0.09);
+  --fs-blue: #2459e0;
+  --fs-blue-strong: #1c48c0;
+  --fs-blue-soft: rgba(36, 89, 224, 0.08);
+  --fs-cyan: #2459e0;
   --fs-accent: #9a6400;
   --fs-success: #16804a;
   --fs-warning: #9a6400;
   --fs-danger: #c62f2f;
-  --fs-focus: #2457e6;
+  --fs-focus: #2459e0;
 
-  --fs-primary-grad: linear-gradient(180deg, #3a6cf2 0%, #2353de 100%);
-  --fs-primary-grad-hover: linear-gradient(180deg, #2f62ea 0%, #1c48c9 100%);
-  --fs-brand-grad: linear-gradient(120deg, #0a8fc2 0%, #2457e6 55%, #6a45e8 100%);
+  --fs-primary: #d42a37;
+  --fs-primary-grad: linear-gradient(180deg, #e0333f, #c4222e);
+  --fs-primary-grad-hover: linear-gradient(180deg, #e94350, #d42a37);
+  --fs-brand-grad: linear-gradient(90deg, #e0333f, #b81f2b);
+  --fs-corner-stripe: linear-gradient(90deg, var(--fs-red) 50%, var(--fs-blue) 50%);
 
-  --fs-success-soft: rgba(22, 128, 74, 0.1);
-  --fs-warning-soft: rgba(196, 128, 0, 0.12);
-  --fs-danger-soft: rgba(198, 47, 47, 0.08);
+  --fs-success-soft: rgba(22, 128, 74, 0.09);
+  --fs-warning-soft: rgba(196, 128, 0, 0.11);
+  --fs-danger-soft: rgba(198, 47, 47, 0.07);
   --fs-info-text: #183a99;
   --fs-success-text: #0f5e35;
   --fs-warning-text: #6e4700;
   --fs-danger-text: #8f1f1f;
-  --fs-info-border: rgba(36, 87, 230, 0.35);
-  --fs-success-border: rgba(22, 128, 74, 0.35);
-  --fs-warning-border: rgba(196, 128, 0, 0.4);
-  --fs-danger-border: rgba(198, 47, 47, 0.35);
+  --fs-info-border: rgba(36, 89, 224, 0.3);
+  --fs-success-border: rgba(22, 128, 74, 0.32);
+  --fs-warning-border: rgba(196, 128, 0, 0.36);
+  --fs-danger-border: rgba(198, 47, 47, 0.32);
 
-  --fs-row-border: #e8edf4;
-  --fs-header-bg: rgba(248, 250, 253, 0.82);
-  --fs-backdrop: rgba(11, 21, 40, 0.42);
-  --fs-pattern: rgba(20, 45, 95, 0.06);
-  --fs-glow-red: rgba(212, 42, 55, 0.07);
-  --fs-glow-blue: rgba(36, 87, 230, 0.1);
-  --fs-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  --fs-shadow-sm: 0 1px 2px rgba(15, 26, 44, 0.06), 0 1px 1px rgba(15, 26, 44, 0.04);
-  --fs-shadow: 0 10px 28px -10px rgba(15, 26, 44, 0.16), 0 2px 6px rgba(15, 26, 44, 0.05);
-  --fs-shadow-lg: 0 30px 60px -20px rgba(15, 26, 44, 0.25), 0 8px 18px -6px rgba(15, 26, 44, 0.08);
-  --fs-shadow-primary: 0 8px 20px -8px rgba(36, 87, 230, 0.55);
-  --fs-ring: 0 0 0 4px rgba(36, 87, 230, 0.16);
-  --fs-skeleton: rgba(20, 45, 95, 0.06);
-  --fs-skeleton-shine: rgba(20, 45, 95, 0.11);
+  --fs-row-border: #eceef1;
+  --fs-header-bg: rgba(255, 255, 255, 0.92);
+  --fs-backdrop: rgba(17, 20, 24, 0.45);
+  --fs-pattern: rgba(17, 20, 24, 0.05);
+  --fs-glow-red: rgba(212, 42, 55, 0.04);
+  --fs-glow-blue: rgba(36, 89, 224, 0.05);
+  --fs-highlight: inset 0 0 0 0 transparent;
+  --fs-shadow-sm: 0 1px 2px rgba(17, 20, 24, 0.06);
+  --fs-shadow: 0 8px 22px -12px rgba(17, 20, 24, 0.18);
+  --fs-shadow-lg: 0 24px 50px -18px rgba(17, 20, 24, 0.25);
+  --fs-shadow-primary: 0 8px 20px -10px rgba(212, 42, 55, 0.6);
+  --fs-ring: 0 0 0 3px rgba(36, 89, 224, 0.2);
+  --fs-skeleton: rgba(17, 20, 24, 0.05);
+  --fs-skeleton-shine: rgba(17, 20, 24, 0.09);
 }
 
 [data-density="compact"] {
@@ -181,6 +188,37 @@
   box-sizing: border-box;
 }
 
+// Touch screens (phones, tablets, judge tablets): finger-sized controls, at least 44px.
+@media (pointer: coarse) {
+  :root {
+    --fs-control-h: 3rem;
+    --fs-control-h-sm: 2.75rem;
+  }
+}
+
+// Large monitors and TVs viewed from a distance: everything in rem grows a little.
+@media (min-width: 1920px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 2560px) {
+  html {
+    font-size: 20px;
+  }
+}
+
+a,
+button,
+[role="button"],
+label,
+summary {
+  // No double-tap zoom delay and no grey tap flash on mobile.
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
 html,
 body {
   margin: 0;
@@ -188,11 +226,15 @@ body {
 }
 
 html {
+  scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
 }
 
 body {
+  // Phones with a notch or rounded corners (viewport-fit=cover in app/layout.tsx).
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
   background: var(--fs-bg);
   color: var(--fs-text);
   font-family: var(--fs-font);
@@ -323,6 +365,24 @@ textarea {
 
   to {
     background-position: -50% 0;
+  }
+}
+
+// Scroll reveal (lib/reveal.ts). Hidden only after the hook marks <html>, so server HTML and no-JS stay visible.
+// An animation filled backwards only (not a transition): it never fights the element's own hover transitions.
+[data-reveal-ready] [data-reveal]:not([data-revealed]) {
+  opacity: 0;
+}
+
+[data-reveal-ready] [data-revealed] {
+  animation: fs-reveal 0.8s var(--fs-ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
+@keyframes fs-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.985);
   }
 }
 

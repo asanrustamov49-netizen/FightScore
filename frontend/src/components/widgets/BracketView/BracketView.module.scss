@@ -1,0 +1,227 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.champion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 1rem;
+  padding: 0.9rem 1.1rem;
+  border: 1px solid var(--fs-warning-border);
+  border-radius: var(--fs-radius);
+  background: var(--fs-warning-soft);
+
+  span {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--fs-accent);
+  }
+
+  strong {
+    font-family: var(--fs-font-display);
+    font-size: 1.25rem;
+    text-transform: uppercase;
+  }
+}
+
+// Horizontal scroll on narrow screens: the bracket keeps its shape instead of squeezing names.
+.scroller {
+  overflow-x: auto;
+  padding-bottom: 0.5rem;
+  overscroll-behavior-x: contain;
+
+  &:focus-visible {
+    outline: 2px solid var(--fs-focus);
+    outline-offset: 2px;
+  }
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(var(--rounds), minmax(15rem, 1fr));
+  gap: 1.25rem;
+  min-width: min-content;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.roundTitle {
+  margin-bottom: 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--fs-text-muted);
+}
+
+// Each later round is spaced so a card sits between the two it comes from.
+.slots {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex: 1;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.slot {
+  position: relative;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--fs-border);
+  border-radius: var(--fs-radius-sm);
+  background: var(--fs-surface);
+  box-shadow: var(--fs-shadow-sm);
+  overflow: hidden;
+  transition:
+    border-color var(--fs-dur) var(--fs-ease),
+    box-shadow var(--fs-dur) var(--fs-ease);
+
+  &:hover {
+    border-color: var(--fs-border-strong);
+    box-shadow: var(--fs-shadow);
+  }
+
+  &:has(.cardLink:focus-visible) {
+    outline: 2px solid var(--fs-focus);
+    outline-offset: 2px;
+  }
+}
+
+.live {
+  border-color: var(--fs-danger-border);
+}
+
+// The link is stretched over the card; the walkover buttons sit above it.
+.cardLink {
+  color: var(--fs-text-muted);
+
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
+  &:hover {
+    text-decoration: none;
+  }
+
+  &:focus-visible {
+    outline: none;
+  }
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.45rem 0.7rem;
+  border-bottom: 1px solid var(--fs-row-border);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.side {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2.4rem;
+  padding: 0 0.7rem;
+  box-shadow: inset 3px 0 0 var(--corner);
+
+  & + & {
+    border-top: 1px solid var(--fs-row-border);
+  }
+}
+
+.red {
+  --corner: var(--fs-red);
+}
+
+.blue {
+  --corner: var(--fs-blue);
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.9rem;
+
+  em {
+    color: var(--fs-text-faint);
+    font-size: 0.82rem;
+  }
+}
+
+.score {
+  font-family: var(--fs-font-display);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.won {
+  background: var(--fs-success-soft);
+
+  .name {
+    font-weight: 700;
+  }
+}
+
+.lost {
+  opacity: 0.55;
+}
+
+.bye {
+  display: grid;
+  place-items: center;
+  min-height: 5.5rem;
+  border: 1px dashed var(--fs-border-strong);
+  border-radius: var(--fs-radius-sm);
+  color: var(--fs-text-faint);
+  font-size: 0.82rem;
+}
+
+.note {
+  padding: 0.35rem 0.7rem;
+  border-top: 1px solid var(--fs-row-border);
+  color: var(--fs-text-muted);
+  font-size: 0.75rem;
+}
+
+.walkover {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 0.7rem;
+  border-top: 1px solid var(--fs-warning-border);
+  background: var(--fs-warning-soft);
+
+  span {
+    width: 100%;
+    font-size: 0.75rem;
+    font-weight: 650;
+    color: var(--fs-warning-text);
+  }
+}

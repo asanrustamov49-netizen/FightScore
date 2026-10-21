@@ -1,0 +1,162 @@
+@use "../../../styles/mixins" as *;
+
+.grid {
+  display: grid;
+  gap: 1rem;
+
+  @include up($bp-md) {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+
+// Photo card: always dark (white text on a shaded photo), whatever the page theme.
+.card {
+  --role: #3b82f6;
+  --role-solid: #1f4fd6;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  min-height: 26rem;
+  border-radius: var(--fs-radius-xl);
+  overflow: hidden;
+  color: #fff;
+  text-decoration: none;
+  background: #0b0e13;
+  box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.7);
+  outline: 1px solid rgba(255, 255, 255, 0.08);
+  outline-offset: -1px;
+
+  &:focus-visible {
+    @include focus-ring;
+  }
+
+  &:hover .photo {
+    transform: scale(1.04);
+  }
+
+  &:hover .cta {
+    background: #fff;
+    color: var(--role-solid);
+  }
+}
+
+.judge {
+  --role: #ff5a66;
+  --role-solid: #c9202d;
+}
+
+.display {
+  --role: #35c97a;
+  --role-solid: #16804a;
+}
+
+.photo {
+  z-index: -2;
+  object-fit: cover;
+  transition: transform 600ms var(--fs-ease-out);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+.shade {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 10, 14, 0.25) 0%, rgba(8, 10, 14, 0.55) 40%, rgba(8, 10, 14, 0.94) 72%),
+    linear-gradient(180deg, var(--role) 0, transparent 4px);
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 1.4rem;
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: auto;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  width: 3rem;
+  height: 3rem;
+  border-radius: 0.9rem;
+  background: var(--role-solid);
+  box-shadow: 0 8px 24px -10px var(--role);
+}
+
+.num {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.7);
+  font-variant-numeric: tabular-nums;
+}
+
+.title {
+  margin-top: 4rem;
+  font-size: 1.6rem;
+  font-weight: 800;
+  line-height: 1.15;
+}
+
+.who {
+  color: rgba(255, 255, 255, 0.82);
+  line-height: 1.5;
+}
+
+.steps {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.3rem 0 0.4rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  font-size: var(--fs-text-sm);
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    counter-increment: step;
+
+    &::before {
+      content: counter(step);
+      display: grid;
+      place-items: center;
+      flex: none;
+      width: 1.5rem;
+      height: 1.5rem;
+      border-radius: 50%;
+      font-size: 0.75rem;
+      font-weight: 700;
+      border: 1px solid var(--role);
+      color: #fff;
+    }
+  }
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 3rem;
+  margin-top: 0.4rem;
+  border-radius: var(--fs-radius);
+  background: var(--role-solid);
+  font-weight: 700;
+  transition:
+    background-color var(--fs-dur-fast) ease,
+    color var(--fs-dur-fast) ease;
+}

@@ -76,11 +76,10 @@
   align-items: center;
   gap: 1rem 1.25rem;
   padding: 1.15rem 1.35rem;
-  border: 1px solid var(--fs-info-border);
+  border: 1px solid var(--fs-border);
+  border-left: 3px solid var(--fs-primary);
   border-radius: var(--fs-radius);
-  background:
-    radial-gradient(40rem 12rem at 0% 0%, var(--fs-blue-soft), transparent 70%),
-    var(--fs-surface);
+  background: var(--fs-surface);
   box-shadow: var(--fs-highlight), var(--fs-shadow-sm);
 }
 
@@ -90,8 +89,9 @@
   flex: none;
   width: 2.9rem;
   height: 2.9rem;
-  border-radius: 14px;
-  background: var(--fs-primary-grad);
+  border-radius: var(--fs-radius);
+  background: var(--fs-primary);
+  box-shadow: var(--fs-shadow-primary);
   color: #fff;
   box-shadow: var(--fs-shadow-primary);
 }

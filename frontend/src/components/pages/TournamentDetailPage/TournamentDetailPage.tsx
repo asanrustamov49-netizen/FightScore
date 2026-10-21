@@ -2,19 +2,23 @@
 
 import Link from "next/link";
 import { useParams, usePathname, useRouter, useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { TournamentStatusBadge } from "@/src/components/ui/Badge/Badge";
 import { Button, ButtonLink } from "@/src/components/ui/Button/Button";
 import { Card } from "@/src/components/ui/Card/Card";
 import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Flag } from "@/src/components/ui/Flag/Flag";
-import { Field, FormActions, Input, Select } from "@/src/components/ui/Form/Form";
+import { FormActions } from "@/src/components/ui/Form/Form";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
 import { Empty, ErrorState, Loading, Notice, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { Columns, MetaItem, PageHeader, Stack } from "@/src/components/ui/PageHeader/PageHeader";
 import { LinkRow, RowLink, Table, tableStyles } from "@/src/components/ui/Table/Table";
 import { Tabs } from "@/src/components/ui/Tabs/Tabs";
 import { useToast } from "@/src/components/ui/Toast/Toast";
+import { AthleteForm } from "@/src/components/widgets/AthleteForm/AthleteForm";
+import { BulkAthletePicker, type BulkResult } from "@/src/components/widgets/BulkAthletePicker/BulkAthletePicker";
+import { BracketView } from "@/src/components/widgets/BracketView/BracketView";
+import { BracketCreateForm } from "@/src/components/widgets/BracketView/BracketCreateForm";
 import { MatchSetupForm } from "@/src/components/widgets/MatchSetupForm/MatchSetupForm";
 import { MatchTable } from "@/src/components/widgets/MatchTable/MatchTable";
 import { StatTiles } from "@/src/components/widgets/StatTiles/StatTiles";
@@ -22,11 +26,11 @@ import { TournamentJudges } from "@/src/components/widgets/TournamentJudges/Tour
 import { TournamentForm, type TournamentInput } from "@/src/components/widgets/TournamentForm/TournamentForm";
 import { api, errorText } from "@/src/lib/api";
 import { dateRange, personName } from "@/src/lib/format";
-import type { Athlete, Discipline, MatchListItem, OfficialCandidate, RuleVersion, TournamentDetail } from "@/src/lib/types";
+import type { Athlete, Bracket, Country, Discipline, MatchListItem, OfficialCandidate, RuleVersion, TournamentDetail } from "@/src/lib/types";
 import { useResource } from "@/src/lib/use-resource";
 import styles from "./TournamentDetailPage.module.scss";
 
-const TABS = ["overview", "athletes", "matches", "judges", "results"] as const;
+const TABS = ["overview", "athletes", "matches", "bracket", "judges", "results"] as const;
 type Tab = (typeof TABS)[number];
 
 /** The next status an organizer moves the tournament to, with its button. */
@@ -48,6 +52,21 @@ export function TournamentDetailPage() {
   const t = useResource<TournamentDetail>(`/tournaments/${id}`);
   const canManage = !!t.data?.canManage && !t.data.archived_at;
   const matches = useResource<MatchListItem[]>(`/matches?tournamentId=${id}`);
+  const brackets = useResource<Bracket[]>(`/tournaments/${id}/brackets`);
+  // The bracket tab follows results on its own while matches are being fought: a light refresh every 10 s, only
+  // while the page is visible and something can still change, plus one on return to the tab.
+  const bracketActive = !!brackets.data?.some((b) => b.matches.some((m) => ["ready", "live", "awaiting_confirmation"].includes(m.status)));
+  const reloadBrackets = brackets.reload;
+  useEffect(() => {
+    if (tabParam !== "bracket" || !bracketActive) return;
+    const tick = () => document.visibilityState === "visible" && void reloadBrackets();
+    const timer = window.setInterval(tick, 10_000);
+    document.addEventListener("visibilitychange", tick);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", tick);
+    };
+  }, [tabParam, bracketActive, reloadBrackets]);
   const disciplines = useResource<Discipline[]>(canManage ? "/disciplines" : null);
   const athletes = useResource<Athlete[]>(canManage ? "/athletes" : null);
   const rules = useResource<RuleVersion[]>(canManage ? "/rule-versions" : null);
@@ -55,8 +74,10 @@ export function TournamentDetailPage() {
 
   const [editing, setEditing] = useState(() => query.get("edit") === "1");
   const [creatingMatch, setCreatingMatch] = useState(false);
-  const [registerId, setRegisterId] = useState("");
-  const [regNumber, setRegNumber] = useState("");
+  const [newAthlete, setNewAthlete] = useState(false);
+  const [creatingBracket, setCreatingBracket] = useState(false);
+  // Loaded only when the organizer opens the inline "new athlete" form.
+  const countries = useResource<Country[]>(canManage && newAthlete ? "/countries" : null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<"archive" | "complete" | null>(null);
@@ -65,7 +86,6 @@ export function TournamentDetailPage() {
   if (t.error || !t.data) return <ErrorState message={t.error ?? "Турнир не найден"} onRetry={t.reload} />;
   const tour = t.data;
   const registered = new Set(tour.athletes.map((a) => a.athlete_id));
-  const available = (athletes.data ?? []).filter((a) => !registered.has(a.id));
   const all = matches.data ?? [];
   const live = all.filter((m) => m.status === "live" || m.status === "awaiting_confirmation");
   const completed = all.filter((m) => m.status === "completed");
@@ -75,6 +95,7 @@ export function TournamentDetailPage() {
   const usableRules = (rules.data ?? []).filter((r) => r.status === "approved" && !r.profile_archived_at && disciplineIds.has(r.discipline_id));
   const next = NEXT_STATUS[tour.status];
   const finished = tour.status === "completed";
+  const freeDisciplines = tour.disciplines.filter((d) => !brackets.data?.some((b) => b.discipline_id === d.id));
   const hrefFor = (tabId: string) => (tabId === "overview" ? pathname : `${pathname}?tab=${tabId}`);
 
   const asInput = (status: TournamentDetail["status"]): TournamentInput => ({
@@ -146,6 +167,7 @@ export function TournamentDetailPage() {
   return (
     <>
       <PageHeader
+        hero
         breadcrumbs={[{ label: "Турниры", href: "/tournaments" }]}
         title={
           <>
@@ -178,7 +200,19 @@ export function TournamentDetailPage() {
         }
       />
       <Stack>
-        {tour.archived_at && <Notice tone="info">Турнир в архиве. Данные, поединки и результаты сохранены и доступны для просмотра.</Notice>}
+        {tour.archived_at && (
+          <Notice tone="info" title="Турнир в архиве">
+            Данные, поединки и результаты сохранены и доступны для просмотра. Чтобы снова управлять турниром, верните его из архива.
+            {tour.canManage && (
+              <span className={styles.noticeAction}>
+                <Button size="sm" loading={busy} onClick={() => void run(() => api.post(`/tournaments/${id}/unarchive`), "Турнир возвращён из архива")}>
+                  <Icon name="archive" size={16} />
+                  Вернуть из архива
+                </Button>
+              </span>
+            )}
+          </Notice>
+        )}
         {error && <Notice tone="error">{error}</Notice>}
         {editing && canManage && disciplines.data && (
           <Card title="Редактирование турнира">
@@ -226,6 +260,7 @@ export function TournamentDetailPage() {
             { id: "athletes", label: "Участники", count: tour.athletes.length },
             { id: "matches", label: "Поединки", count: all.length },
             { id: "judges", label: "Судьи", count: canManage ? judges.length : undefined },
+            { id: "bracket", label: "Сетка", count: brackets.data?.length || undefined },
             { id: "results", label: "Результаты", count: completed.length },
           ]}
         />
@@ -316,41 +351,53 @@ export function TournamentDetailPage() {
           <Card title={`Участники (${tour.athletes.length})`} flush>
             {canManage && (
               <div className={styles.register}>
-                <Field label="Спортсмен из базы" hint={available.length ? undefined : "Все спортсмены из базы уже зарегистрированы"}>
-                  {(fid) => (
-                    <Select id={fid} value={registerId} onChange={(e) => setRegisterId(e.target.value)}>
-                      <option value="">— выберите —</option>
-                      {available.map((a) => (
-                        <option key={a.id} value={a.id}>
-                          {personName(a)} ({a.country_code})
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </Field>
-                <Field label="Регистрационный номер" hint="Необязательно">
-                  {(fid) => <Input id={fid} value={regNumber} onChange={(e) => setRegNumber(e.target.value)} maxLength={40} />}
-                </Field>
+                <BulkAthletePicker
+                  athletes={athletes.data ?? []}
+                  registered={registered}
+                  onRegisterOne={async (athleteId, registrationNumber) => {
+                    await api.post(`/tournaments/${id}/athletes`, { athleteId, registrationNumber });
+                    await t.reload();
+                    toast("Спортсмен зарегистрирован в турнире");
+                  }}
+                  onRegisterMany={async (athleteIds) => {
+                    const res = await api.post<BulkResult>(`/tournaments/${id}/athletes/bulk`, { athleteIds });
+                    await t.reload();
+                    if (res.registered.length) toast(`Зарегистрировано спортсменов: ${res.registered.length}`);
+                    return res;
+                  }}
+                />
                 <FormActions>
-                  <ButtonLink href="/athletes" variant="ghost">
+                  <Button variant="ghost" onClick={() => setNewAthlete((x) => !x)} aria-expanded={newAthlete}>
                     <Icon name="plus" size={16} />
-                    Новый спортсмен в базе
-                  </ButtonLink>
-                  <Button
-                    variant="primary"
-                    disabled={!registerId}
-                    loading={busy}
-                    onClick={() =>
-                      run(async () => {
-                        await api.post(`/tournaments/${id}/athletes`, { athleteId: registerId, registrationNumber: regNumber || null });
-                        setRegisterId("");
-                        setRegNumber("");
-                      }, "Спортсмен зарегистрирован в турнире")
-                    }
-                  >
-                    Зарегистрировать
+                    {newAthlete ? "Скрыть форму спортсмена" : "Нового спортсмена нет в базе"}
                   </Button>
                 </FormActions>
+              </div>
+            )}
+            {canManage && newAthlete && (
+              <div className={styles.register}>
+                <strong>Новый спортсмен</strong>
+                <span className={styles.sub}>Спортсмен будет добавлен в общую базу и сразу зарегистрирован в этом турнире.</span>
+                {countries.data ? (
+                  <AthleteForm
+                    countries={countries.data}
+                    submitLabel="Добавить и зарегистрировать"
+                    onCancel={() => setNewAthlete(false)}
+                    onSubmit={async (v) => {
+                      // Two calls of the existing API: create in the base, then register. If the second fails,
+                      // the athlete stays in the base and can be picked from the list above.
+                      const created = await api.post<{ id: string }>("/athletes", v);
+                      await api.post(`/tournaments/${id}/athletes`, { athleteId: created.id, registrationNumber: null });
+                      setNewAthlete(false);
+                      await Promise.all([t.reload(), athletes.reload()]);
+                      toast("Спортсмен добавлен и зарегистрирован в турнире");
+                    }}
+                  />
+                ) : countries.error ? (
+                  <Notice tone="error">{countries.error}</Notice>
+                ) : (
+                  <Loading label="Загрузка списка стран…" />
+                )}
               </div>
             )}
             {tour.athletes.length ? (
@@ -408,7 +455,8 @@ export function TournamentDetailPage() {
             subtitle="Строка открывает поединок: состав, судьи, журнал и результат"
             actions={
               canManage &&
-              !creatingMatch && (
+              !creatingMatch &&
+              !finished && (
                 <Button variant="primary" size="sm" onClick={() => setCreatingMatch(true)}>
                   <Icon name="plus" size={16} />
                   Новый поединок
@@ -456,6 +504,70 @@ export function TournamentDetailPage() {
               </Empty>
             </Card>
           ))}
+
+        {tab === "bracket" && (
+          <Stack>
+            {canManage && !finished && !creatingBracket && freeDisciplines.length > 0 && (
+              <div>
+                <Button variant="primary" onClick={() => setCreatingBracket(true)}>
+                  <Icon name="plus" size={17} />
+                  Создать сетку
+                </Button>
+              </div>
+            )}
+            {creatingBracket && rules.data && (
+              <Card title="Новая сетка" subtitle="Олимпийская система: проигравший выбывает, победитель проходит в следующий круг">
+                <BracketCreateForm
+                  disciplines={freeDisciplines}
+                  entries={tour.athletes}
+                  ruleVersions={rules.data}
+                  onCancel={() => setCreatingBracket(false)}
+                  onSubmit={async (v) => {
+                    await api.post(`/tournaments/${id}/brackets`, v);
+                    setCreatingBracket(false);
+                    await Promise.all([brackets.reload(), matches.reload()]);
+                    toast("Сетка создана: поединки первого круга готовы к подготовке");
+                  }}
+                />
+              </Card>
+            )}
+            {brackets.error ? (
+              <ErrorState message={brackets.error} onRetry={brackets.reload} />
+            ) : !brackets.data ? (
+              <Loading />
+            ) : brackets.data.length === 0 ? (
+              !creatingBracket && (
+                <Card>
+                  <Empty icon="versus" title="Сеток пока нет">
+                    {canManage && !finished
+                      ? "Сетка создаёт все поединки олимпийской системы сразу и сама переводит победителя в следующий круг после подтверждения результата."
+                      : "Организатор ещё не создал сетку для этого турнира."}
+                  </Empty>
+                </Card>
+              )
+            ) : (
+              brackets.data.map((b) => (
+                <Card
+                  key={b.id}
+                  title={`${b.discipline_name} · сетка на ${b.size}`}
+                  subtitle={`${b.rule_profile_name}, версия правил ${b.rule_version_number}`}
+                >
+                  <BracketView
+                    bracket={b}
+                    canManage={canManage && !finished}
+                    busy={busy}
+                    onWalkover={(matchId, side) =>
+                      void run(async () => {
+                        await api.post(`/matches/${matchId}/walkover`, { side });
+                        await brackets.reload();
+                      }, "Проход в следующий круг назначен")
+                    }
+                  />
+                </Card>
+              ))
+            )}
+          </Stack>
+        )}
 
         {tab === "results" && <ResultsCard matches={completed} />}
       </Stack>

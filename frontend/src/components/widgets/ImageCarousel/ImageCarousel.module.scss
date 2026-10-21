@@ -1,0 +1,199 @@
+// Photos are dark in both themes; the carousel always sits on black.
+.carousel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: #030407;
+  color: #eceff4;
+}
+
+.frames {
+  position: absolute;
+  inset: 0;
+}
+
+// Crossfade: the incoming slide fades in over the outgoing one; both keep moving, so there is no jump.
+.frame {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transform: scale(1.04);
+  transition:
+    opacity 1.8s cubic-bezier(0.45, 0, 0.2, 1),
+    transform calc(var(--interval) + 1.8s) cubic-bezier(0.25, 0.1, 0.25, 1);
+  will-change: opacity, transform;
+
+  img {
+    object-fit: cover;
+    // Graded toward the FightScore palette: deeper blacks, a touch more contrast.
+    filter: saturate(1.08) contrast(1.06) brightness(0.86);
+  }
+}
+
+.active {
+  opacity: 1;
+  transform: scale(1.14);
+  z-index: 1;
+}
+
+// Corner lighting: red from the left, blue from the right, like the two corners under the arena lights.
+.light {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  mix-blend-mode: screen;
+  background:
+    radial-gradient(60% 55% at 0% 100%, rgba(229, 51, 63, 0.28), transparent 70%),
+    radial-gradient(55% 50% at 100% 0%, rgba(47, 107, 255, 0.22), transparent 70%);
+  animation: breathe 9s ease-in-out infinite alternate;
+}
+
+@keyframes breathe {
+  to {
+    opacity: 0.6;
+  }
+}
+
+// Darkens the edges and the bottom so text and controls stay readable.
+.vignette {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  background:
+    radial-gradient(130% 95% at 50% 42%, transparent 50%, rgba(3, 4, 7, 0.7) 100%),
+    linear-gradient(0deg, rgba(3, 4, 7, 0.92) 0%, rgba(3, 4, 7, 0.35) 28%, rgba(3, 4, 7, 0) 48%);
+}
+
+.controls {
+  position: absolute;
+  z-index: 4;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  padding: 1.5rem 2rem 1.75rem;
+}
+
+// The bar keeps running for timing even when the indicators are not shown (landing hero).
+.controlsHidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.paused .dotActive span {
+  animation-play-state: paused;
+}
+
+.caption {
+  white-space: nowrap;
+  font-family: var(--fs-font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(236, 239, 244, 0.85);
+  animation: captionIn 0.9s var(--fs-ease-out) both;
+
+  &::before {
+    content: "";
+    display: inline-block;
+    width: 1.5rem;
+    height: 2px;
+    margin-right: 0.6rem;
+    vertical-align: middle;
+    background: #e5333f;
+  }
+}
+
+@keyframes captionIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+// Each indicator is a small progress bar; the active one fills over the slide's time.
+.dot {
+  position: relative;
+  width: 1.6rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+
+  &::before,
+  span {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 3px;
+    margin-top: -1.5px;
+    border-radius: 2px;
+  }
+
+  &::before {
+    background: rgba(236, 239, 244, 0.28);
+    transition: background-color 0.2s;
+  }
+
+  &:hover::before {
+    background: rgba(236, 239, 244, 0.6);
+  }
+
+  span {
+    display: block;
+    background: #e5333f;
+    transform: scaleX(0);
+    transform-origin: left;
+  }
+
+  &:focus-visible {
+    outline: 2px solid #7ea6ff;
+    outline-offset: 2px;
+  }
+}
+
+.dotActive {
+  width: 2.75rem;
+  transition: width 0.4s var(--fs-ease-out);
+
+  span {
+    animation: fill var(--interval) linear forwards;
+  }
+}
+
+@keyframes fill {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+// Reduced motion: still image, no push-in, indicators show the current slide only.
+@media (prefers-reduced-motion: reduce) {
+  .frame,
+  .active {
+    transform: none;
+  }
+}
+
+:global([data-motion="reduce"]) {
+  .frame,
+  .active {
+    transform: none;
+  }
+}

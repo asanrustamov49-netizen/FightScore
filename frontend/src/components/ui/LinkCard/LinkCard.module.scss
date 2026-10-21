@@ -19,27 +19,35 @@
     box-shadow var(--fs-dur) var(--fs-ease),
     background-color var(--fs-dur) var(--fs-ease);
 
-  // Soft light from the top edge on hover.
-  &::before {
+  // Red line grows along the top edge on hover.
+  &::after {
     content: "";
     position: absolute;
-    inset: 0;
-    z-index: -1;
-    border-radius: inherit;
-    background: radial-gradient(120% 70% at 50% -10%, var(--fs-blue-soft), transparent 60%);
-    opacity: 0;
-    transition: opacity var(--fs-dur) var(--fs-ease);
+    inset: -1px -1px auto;
+    height: 3px;
+    border-radius: var(--fs-radius) var(--fs-radius) 0 0;
+    background: var(--fs-primary);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform var(--fs-dur-slow) var(--fs-ease-out);
     pointer-events: none;
+  }
+
+  &:hover::after {
+    transform: scaleX(1);
+  }
+
+  @media (hover: none) {
+    &:hover {
+      transform: none !important;
+    }
   }
 
   &:hover {
     border-color: var(--fs-border-strong);
     box-shadow: var(--fs-highlight), var(--fs-shadow);
-    transform: translateY(-2px);
+    transform: translateY(-4px);
 
-    &::before {
-      opacity: 1;
-    }
   }
 
   &:active {

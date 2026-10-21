@@ -5,6 +5,7 @@
 }
 
 .tile {
+  animation: fs-enter var(--fs-dur-slow) var(--fs-ease-out) both;
   position: relative;
   display: flex;
   flex-direction: column;
@@ -67,7 +68,7 @@
 
 .live {
   border-color: var(--fs-danger-border);
-  background: radial-gradient(120% 90% at 100% 0%, var(--fs-red-soft), transparent 60%), var(--fs-surface);
+  box-shadow: inset 3px 0 0 var(--fs-red), var(--fs-shadow-sm);
 
   .value {
     color: var(--fs-red-strong);
@@ -90,5 +91,11 @@
   .arrow {
     top: 0.8rem;
     right: 0.8rem;
+  }
+}
+
+@for $i from 2 through 5 {
+  .tile:nth-child(#{$i}) {
+    animation-delay: #{($i - 1) * 50}ms;
   }
 }

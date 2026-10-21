@@ -76,6 +76,8 @@ export function DashboardPage() {
   return (
     <>
       <PageHeader
+        hero
+        eyebrow="Центр управления"
         title={`Здравствуйте, ${me?.user.displayName ?? ""}`}
         description="Текущее состояние соревнований. Нажмите на карточку или строку, чтобы открыть подробности."
         actions={
