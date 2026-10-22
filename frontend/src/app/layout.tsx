@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { DEFAULT_PREFERENCES, PREFERENCES_SCRIPT, PreferencesSync } from "@/src/lib/preferences";
 import { PwaRegistration } from "@/src/lib/pwa";
+import { ServerWait } from "@/src/components/ui/ServerWait/ServerWait";
 import "./globals.scss";
 
 export const metadata: Metadata = {
@@ -41,6 +42,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         <PreferencesSync />
         <PwaRegistration />
+        <ServerWait />
       </body>
     </html>
   );

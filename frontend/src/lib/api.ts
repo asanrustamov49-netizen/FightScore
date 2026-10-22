@@ -18,7 +18,29 @@ interface RequestOptions {
   quiet401?: boolean;
 }
 
-async function request<T>(method: string, path: string, body?: unknown, opts: RequestOptions = {}): Promise<T> {
+type ApiBody = { code?: string; message?: string; details?: unknown } | null;
+
+/** How long a request keeps waiting for a backend that is still starting (or restarting) before it gives up. */
+const SERVER_WAIT_MS = 45_000;
+const MIN_ATTEMPTS = 14;
+/** Window event with `detail: boolean`: some request is waiting for the backend right now. */
+export const SERVER_WAIT_EVENT = "fs:server-wait";
+
+let waiting = 0;
+function setWaiting(delta: number) {
+  waiting = Math.max(0, waiting + delta);
+  if (typeof window !== "undefined") window.dispatchEvent(new CustomEvent(SERVER_WAIT_EVENT, { detail: waiting > 0 }));
+}
+
+/**
+ * The backend could not be reached at all: no connection, or the Next.js proxy answered for it (5xx without the
+ * API's JSON body). The request never got to the API, so sending it again is safe even for POST.
+ */
+function unreachable(res: Response | null, data: ApiBody) {
+  return !res || ([500, 502, 503].includes(res.status) && !data?.code);
+}
+
+async function send(method: string, path: string, body?: unknown): Promise<{ res: Response | null; data: ApiBody }> {
   let res: Response;
   try {
     res = await fetch(`/api${path}`, {
@@ -32,18 +54,52 @@ async function request<T>(method: string, path: string, body?: unknown, opts: Re
       body: body === undefined ? undefined : JSON.stringify(body),
     });
   } catch {
-    throw new ApiError(0, "NETWORK", "Нет связи с сервером");
+    return { res: null, data: null };
   }
+  if (res.status === 204) return { res, data: null };
+  return { res, data: await res.json().catch(() => null) };
+}
+
+/**
+ * Sends a request. While the backend is unreachable (still starting, restarting), it waits and retries for up to
+ * SERVER_WAIT_MS and announces the wait, so the page shows "connecting" instead of an error.
+ */
+async function request<T>(method: string, path: string, body?: unknown, opts: RequestOptions = {}): Promise<T> {
+  const started = Date.now();
+  let delay = 600;
+  let attempts = 0;
+  let counted = false;
+  try {
+    for (;;) {
+      const { res, data } = await send(method, path, body);
+      attempts++;
+      // Gives up only after enough real attempts too: a background tab throttles timers, and the clock alone would
+      // end the wait after one or two tries.
+      const expired = Date.now() - started > SERVER_WAIT_MS && attempts >= MIN_ATTEMPTS;
+      if (!unreachable(res, data) || expired) return finish<T>(res, data, path, opts);
+      if (!counted) {
+        counted = true;
+        setWaiting(1);
+      }
+      await new Promise((r) => setTimeout(r, delay));
+      delay = Math.min(delay * 1.6, 4000);
+    }
+  } finally {
+    if (counted) setWaiting(-1);
+  }
+}
+
+function finish<T>(res: Response | null, data: ApiBody, path: string, opts: RequestOptions): T {
+  if (!res) throw new ApiError(0, "NETWORK", "Нет связи с сервером FightScore. Проверьте, что сервер запущен, и повторите.");
   if (res.status === 204) return undefined as T;
-  const data = await res.json().catch(() => null);
   if (!res.ok) {
     if (res.status === 401 && typeof window !== "undefined" && !opts.quiet401 && path !== "/auth/login") {
       // Expired session: full page load to /login so no stale data stays on screen.
       // eslint-disable-next-line @next/next/no-location-assign-relative-destination
       window.location.assign(`/login?next=${encodeURIComponent(window.location.pathname)}`);
     }
-    // 5xx from the proxy usually means the backend is down.
-    const fallback = res.status >= 500 ? "Сервер недоступен или вернул ошибку" : `Ошибка ${res.status}`;
+    // 5xx without the API's JSON: the proxy answered, the backend did not.
+    const fallback = res.status >= 500 ? "Сервер FightScore не отвечает. Проверьте, что он запущен, и повторите." : `Ошибка ${res.status}`;
     throw new ApiError(res.status, data?.code ?? "HTTP", data?.message ?? fallback, data?.details);
   }
   return data as T;
