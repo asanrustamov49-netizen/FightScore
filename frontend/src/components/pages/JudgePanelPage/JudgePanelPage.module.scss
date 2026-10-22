@@ -198,6 +198,18 @@
   @include label-caps;
 }
 
+// "Remove points" label with the disqualification button on the same line, right next to the minus buttons.
+.groupHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.dqButton {
+  white-space: nowrap;
+}
+
 .buttons {
   display: grid;
   gap: 0.5rem;

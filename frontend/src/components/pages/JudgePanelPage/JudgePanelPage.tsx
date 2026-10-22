@@ -10,6 +10,7 @@ import { Card } from "@/src/components/ui/Card/Card";
 import { ConnectionIndicator } from "@/src/components/ui/Connection/Connection";
 import { ConfirmDialog, DialogText } from "@/src/components/ui/Dialog/Dialog";
 import { Flag } from "@/src/components/ui/Flag/Flag";
+import { Icon } from "@/src/components/ui/Icon/Icon";
 import { Checkbox, Field, FormActions, Input, Select } from "@/src/components/ui/Form/Form";
 import { Loading, Notice } from "@/src/components/ui/Notice/Notice";
 import { EventLog } from "@/src/components/widgets/EventLog/EventLog";
@@ -23,6 +24,7 @@ import styles from "./JudgePanelPage.module.scss";
 type Dialog =
   | { kind: "penalty"; side: Side; code: string }
   | { kind: "end" }
+  | { kind: "dq"; side: Side }
   | { kind: "confirm" }
   | { kind: "time" }
   | { kind: "void"; event: MatchEvent }
@@ -30,6 +32,12 @@ type Dialog =
   | null;
 
 const VOIDABLE = new Set(["score.add", "score.subtract", "penalty.add"]);
+const OTHER: Record<Side, Side> = { red: "blue", blue: "red" };
+
+/** The profile's disqualification end method, if it has one: code "dq" or a label that says so. Never invented here. */
+function dqMethod(methods: { code: string; label: string; requiresWinner: boolean }[] | undefined) {
+  return methods?.find((m) => m.requiresWinner && (m.code === "dq" || /дисквал/i.test(m.label)));
+}
 
 export function JudgePanelPage() {
   const { matchId } = useParams<{ matchId: string }>();
@@ -107,6 +115,8 @@ export function JudgePanelPage() {
     setChecked(false);
   };
 
+  const dq = dqMethod(def?.endMethods);
+
   const sidePanel = (side: Side) => {
     const p = s.participants[side];
     const pens = def?.penalties.filter((d) => (s.state.penalties[side][d.code] ?? 0) > 0) ?? [];
@@ -144,7 +154,20 @@ export function JudgePanelPage() {
               </div>
             </div>
             <div className={styles.group}>
-              <span className={styles.groupLabel}>Снять</span>
+              <div className={styles.groupHead}>
+                <span className={styles.groupLabel}>Снять</span>
+                <Button
+                  size="sm"
+                  variant="danger"
+                  className={styles.dqButton}
+                  disabled={!live || !allowed("end") || !dq}
+                  title={!dq ? "В профиле правил нет способа завершения «Дисквалификация»" : !actions.includes("end") ? "Дисквалифицирует главный судья" : undefined}
+                  onClick={() => setDialog({ kind: "dq", side })}
+                >
+                  <Icon name="close" size={15} />
+                  Дисквалификация
+                </Button>
+              </div>
               <div className={styles.buttons}>
                 {def.scoring.map((a) => (
                   <Button
@@ -398,6 +421,30 @@ export function JudgePanelPage() {
           {dialog?.kind === "void" && `#${dialog.event.seq}: ${describeEvent(dialog.event, def)}.`} Исходная запись останется в журнале с пометкой об отмене.
         </DialogText>
         <Field label="Причина">{(id) => <Input id={id} value={reason} onChange={(e) => setReason(e.target.value)} maxLength={300} />}</Field>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={dialog?.kind === "dq"}
+        title="Дисквалифицировать бойца?"
+        confirmLabel="Дисквалифицировать"
+        confirmVariant="danger"
+        confirmDisabled={!checked}
+        onClose={close}
+        onConfirm={async () => {
+          if (dialog?.kind !== "dq" || !dq) return;
+          if (await exec({ type: "match.end", outcomeCode: dq.code, winnerSide: OTHER[dialog.side] })) close();
+        }}
+      >
+        {dialog?.kind === "dq" && (
+          <>
+            <DialogText>
+              {SIDE_LABEL[dialog.side]}: <strong>{personName(s.participants[dialog.side])}</strong> дисквалифицирован. Победа — {SIDE_LABEL[OTHER[dialog.side]].toLowerCase()}:{" "}
+              <strong>{personName(s.participants[OTHER[dialog.side]])}</strong> ({dq?.label.toLowerCase()}).
+            </DialogText>
+            <DialogText>Таймер остановится. Результат вступит в силу после подтверждения главным судьёй и попадёт в журнал.</DialogText>
+            <Checkbox checked={checked} onChange={(e) => setChecked(e.target.checked)} label="Я уверен(а): дисквалифицировать этого бойца" />
+          </>
+        )}
       </ConfirmDialog>
 
       <ConfirmDialog
