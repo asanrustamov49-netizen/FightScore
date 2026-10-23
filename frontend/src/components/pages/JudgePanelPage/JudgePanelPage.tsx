@@ -18,6 +18,7 @@ import { api } from "@/src/lib/api";
 import { describeEvent } from "@/src/lib/events";
 import { formatClock, personName, SIDE_LABEL } from "@/src/lib/format";
 import { useCountdown, useMatchChannel } from "@/src/lib/realtime";
+import { useWakeLock } from "@/src/lib/wake-lock";
 import type { MatchEvent, OfficialAction, Side } from "@/src/lib/types";
 import styles from "./JudgePanelPage.module.scss";
 
@@ -32,6 +33,28 @@ type Dialog =
   | null;
 
 const VOIDABLE = new Set(["score.add", "score.subtract", "penalty.add"]);
+
+/** Keyboard layout of the panel: red on the left of the number row, blue on the right, space for the clock. */
+const SCORE_KEYS: Record<Side, string[]> = { red: ["Digit1", "Digit2", "Digit3", "Digit4"], blue: ["Digit7", "Digit8", "Digit9", "Digit0"] };
+const keyLabel = (code: string | undefined) => code?.replace("Digit", "");
+
+/**
+ * Hotkeys for a judge at a laptop: eyes stay on the fight, not on the mouse. Ignored while a dialog is open, while
+ * typing in a field, with Ctrl/Alt/Cmd, and on key auto-repeat (holding a key never adds points twice).
+ */
+function JudgeHotkeys({ onKey }: { onKey: (code: string, shift: boolean) => boolean }) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.repeat || e.ctrlKey || e.altKey || e.metaKey || document.querySelector("dialog[open]")) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(t.tagName))) return;
+      if (onKey(e.code, e.shiftKey)) e.preventDefault();
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onKey]);
+  return null;
+}
 const OTHER: Record<Side, Side> = { red: "blue", blue: "red" };
 
 /** The profile's disqualification end method, if it has one: code "dq" or a label that says so. Never invented here. */
@@ -43,6 +66,7 @@ export function JudgePanelPage() {
   const { matchId } = useParams<{ matchId: string }>();
   const { snapshot: s, status, error: linkError, offset, pending, send } = useMatchChannel(matchId);
   const remaining = useCountdown(s?.clock, s?.serverTime, offset);
+  useWakeLock(s?.status === "live" || s?.status === "ready");
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [message, setMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [dialog, setDialog] = useState<Dialog>(null);
@@ -125,6 +149,23 @@ export function JudgePanelPage() {
   const outcomeMethod = outcome && def?.endMethods.find((m) => m.code === outcome.code);
   const disqualified: Side | null = outcomeMethod && dqMethod([outcomeMethod]) && outcome.winner ? OTHER[outcome.winner] : null;
 
+  const onKey = (code: string, shift: boolean) => {
+    if (code === "Space") {
+      if (!live || !allowed("timer") || timerBusy) return false;
+      if (running) void exec({ type: "timer.stop" });
+      else if (remaining > 0) void exec({ type: "timer.start" });
+      return true;
+    }
+    for (const side of ["red", "blue"] as const) {
+      const a = def?.scoring[SCORE_KEYS[side].indexOf(code)];
+      if (!a) continue;
+      if (!live || !allowed("score") || (shift && s.state.score[side] < a.points)) return true;
+      void exec({ type: shift ? "score.subtract" : "score.add", side, code: a.code });
+      return true;
+    }
+    return false;
+  };
+
   const sidePanel = (side: Side) => {
     const p = s.participants[side];
     const pens = def?.penalties.filter((d) => (s.state.penalties[side][d.code] ?? 0) > 0) ?? [];
@@ -155,9 +196,14 @@ export function JudgePanelPage() {
             <div className={styles.group}>
               <span className={styles.groupLabel}>Начислить</span>
               <div className={styles.buttons}>
-                {def.scoring.map((a) => (
+                {def.scoring.map((a, i) => (
                   <Button key={a.code} variant={side} className={styles.bigButton} disabled={!live || !allowed("score")} onClick={() => exec({ type: "score.add", side, code: a.code })}>
                     {a.label}
+                    {SCORE_KEYS[side][i] && (
+                      <kbd className={styles.kbd} aria-hidden>
+                        {keyLabel(SCORE_KEYS[side][i])}
+                      </kbd>
+                    )}
                   </Button>
                 ))}
               </div>
@@ -268,6 +314,7 @@ export function JudgePanelPage() {
           <Notice tone="warning">Вы не назначены судьёй этого поединка: панель доступна только для просмотра.</Notice>
         </div>
       )}
+      <JudgeHotkeys onKey={onKey} />
       <main className={styles.body}>
         <div className={styles.arena}>
           <section className={styles.clockPanel} aria-label="Время">
@@ -282,6 +329,11 @@ export function JudgePanelPage() {
             </span>
             {s.viewer?.official && !actions.includes("timer") && (s.status === "ready" || live) && (
               <p className={styles.clockHint}>Старт и время ведёт главный судья. Кнопки очков активны, пока идёт поединок.</p>
+            )}
+            {s.viewer?.official && (
+              <p className={styles.keysHint}>
+                Клавиши: <kbd>Пробел</kbd> старт / пауза · <kbd>1</kbd>–<kbd>4</kbd> красный · <kbd>7</kbd>–<kbd>0</kbd> синий · с <kbd>Shift</kbd> — снять
+              </p>
             )}
             <div className={styles.clockControls}>
               {s.status === "ready" && (

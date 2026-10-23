@@ -328,3 +328,37 @@
   border-color: var(--fs-danger-border);
   color: var(--fs-red-strong);
 }
+
+// Hotkey hints: only where there is a keyboard (hidden on touch screens).
+.kbd {
+  margin-left: 0.4rem;
+  padding: 0 0.3rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  line-height: 1.4;
+  background: rgba(0, 0, 0, 0.25);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.keysHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--fs-text-muted);
+  text-align: center;
+
+  kbd {
+    padding: 0 0.3rem;
+    border: 1px solid var(--fs-border-strong);
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.7rem;
+  }
+}
+
+@media (hover: none) {
+  .kbd,
+  .keysHint {
+    display: none;
+  }
+}

@@ -1,7 +1,9 @@
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 import { loadConfig } from '../config/config.js';
 import { pgOptions } from '../database/pg-options.js';
-import { baseline, migrate } from '../database/migrator.js';
+import { baseline, migrate, pendingMigrations } from '../database/migrator.js';
 
 // Objects created by 0001_init.sql; checked before marking it applied with --baseline=1.
 const INIT_TABLES = [
@@ -29,6 +31,18 @@ try {
       return [...INIT_TABLES.filter((t) => !tables.includes(t)), ...INIT_TRIGGERS.filter((t) => !triggers.includes(t))];
     });
     console.log('0001_init.sql recorded as applied.');
+  }
+  // A schema change on a database with data is preceded by a backup (docs/ARCHITECTURE.md §9). A fresh database
+  // (no schema_migrations yet) and the test database have nothing to lose. FS_SKIP_BACKUP=1 skips it deliberately.
+  const hasData = (await client.query(`SELECT to_regclass('schema_migrations') AS t`)).rows[0].t !== null;
+  const pending = await pendingMigrations(client, 'migrations');
+  if (pending.length && hasData && !process.argv.includes('--test') && process.env.FS_SKIP_BACKUP !== '1') {
+    console.log(`Перед миграциями (${pending.join(', ')}) — резервная копия базы.`);
+    const backup = fileURLToPath(new URL('./backup.js', import.meta.url));
+    const r = spawnSync(process.execPath, [backup, 'backup'], { stdio: 'inherit', env: { ...process.env, DATABASE_URL: url } });
+    if (r.status !== 0) {
+      throw new Error('Резервная копия не создана, миграции не применены. Исправьте причину выше или запустите с FS_SKIP_BACKUP=1, если копия не нужна.');
+    }
   }
   await migrate(client, 'migrations');
   console.log('Migrations are up to date.');

@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Flag } from "@/src/components/ui/Flag/Flag";
 import { formatClock, STATUS_LABEL } from "@/src/lib/format";
 import { useCountdown, useDisplayChannel } from "@/src/lib/realtime";
+import { useWakeLock } from "@/src/lib/wake-lock";
 import type { PublicSide, Side } from "@/src/lib/types";
 import styles from "./DisplayPage.module.scss";
 
@@ -12,6 +13,8 @@ import styles from "./DisplayPage.module.scss";
 export function DisplayPage() {
   const { token } = useParams<{ token: string }>();
   const { data, status, error, offset } = useDisplayChannel(token);
+  // A TV board stays on for the whole event.
+  useWakeLock(true);
   const m = data?.match;
   const remaining = useCountdown(m?.clock, m?.serverTime, offset);
   const [isFullscreen, setFullscreen] = useState(false);
