@@ -143,3 +143,11 @@ cd ../frontend
 npm run lint
 npm run build
 ```
+
+## Облако (Vercel + Render)
+
+- Сайт: https://fightscore-one.vercel.app — Vercel, проект `fightscore`, корневая папка `frontend`.
+- API: https://fightscore-api.onrender.com — Render, сервис `fightscore-api` (Singapore, `render.yaml`), база — Supabase.
+- Обновление: `git push` в `main` — Vercel и Render пересобираются сами; Render перед стартом применяет миграции.
+- Переменные: на Vercel `BACKEND_INTERNAL_URL` и `NEXT_PUBLIC_REALTIME_URL` = адрес Render; на Render `DATABASE_URL` (секрет) и `PUBLIC_ORIGINS` = адрес Vercel. Значения задаются в панелях, в репозитории их нет.
+- Бесплатный тариф Render засыпает после 15 минут простоя (пробуждение 30–60 с, сайт показывает «Подключаемся к серверу…»). Для живого турнира — тариф Starter.
