@@ -26,6 +26,8 @@ permissions:
 jobs:
   check:
     runs-on: ubuntu-latest
+    # A hung install or test must not burn Actions minutes for hours.
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend
@@ -45,6 +47,7 @@ jobs:
   deploy:
     needs: check
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - name: Trigger Render deploy
         env:
