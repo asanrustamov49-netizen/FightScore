@@ -13,7 +13,7 @@ build/
 coverage/
 
 # env files: секреты не коммитятся, шаблон .env.example — коммитится
-.env.local
+.env*
 !.env.example
 
 # typescript
@@ -33,5 +33,5 @@ Thumbs.db
 .claude/settings.local.json
 .claude/launch.json
 
+# Vercel CLI project link
 .vercel
-.env.local
