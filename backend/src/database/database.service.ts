@@ -11,6 +11,10 @@ pg.types.setTypeParser(pg.types.builtins.NUMERIC, (v) => Number(v));
 // Keep DATE columns as 'YYYY-MM-DD' strings instead of shifting them through local time.
 pg.types.setTypeParser(pg.types.builtins.DATE, (v) => v);
 
+/** Connections kept open for commands, the snapshot broadcast and the log in parallel. */
+const WARM_CONNECTIONS = 3;
+const WARM_INTERVAL_MS = 20_000;
+
 @Injectable()
 export class DatabaseService implements OnModuleDestroy {
   readonly pool: pg.Pool;
@@ -22,10 +26,25 @@ export class DatabaseService implements OnModuleDestroy {
       keepAlive: true,
       // Remote poolers (Supabase) can be slow to connect and drop idle connections.
       connectionTimeoutMillis: 20_000,
-      idleTimeoutMillis: 60_000,
+      // Idle connections are kept (and pinged below): opening one to a remote database costs seconds, and a
+      // judge's tap after a quiet minute must not wait for that.
+      idleTimeoutMillis: 0,
     });
     // A dropped idle connection must not crash the process; the next query opens a new one.
     this.pool.on('error', (err) => this.logger.warn(`idle database connection lost: ${err.message}`));
+    this.warm = setInterval(() => void this.keepWarm(), WARM_INTERVAL_MS);
+    this.warm.unref();
+    void this.keepWarm();
+  }
+
+  private readonly warm: NodeJS.Timeout;
+
+  /**
+   * Keeps WARM_CONNECTIONS connections open: parallel pings make the pool open that many, and regular traffic keeps
+   * poolers (Supabase) from dropping them as idle. A failed ping is harmless: the next one reconnects.
+   */
+  private async keepWarm() {
+    await Promise.all(Array.from({ length: WARM_CONNECTIONS }, () => this.pool.query('SELECT 1').catch(() => undefined)));
   }
 
   private readonly logger = new Logger('Database');
@@ -57,6 +76,7 @@ export class DatabaseService implements OnModuleDestroy {
   }
 
   async onModuleDestroy() {
+    clearInterval(this.warm);
     await this.pool.end();
   }
 }

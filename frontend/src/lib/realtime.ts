@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { io, type Socket } from "socket.io-client";
 import { api, ApiError } from "./api";
 import type { Clock, MatchSnapshot, PublicDisplay, PublicMatch } from "./types";
@@ -61,52 +61,131 @@ export interface CommandOutcome {
   error?: { code: string; message: string };
 }
 
-/** Officials' channel: authoritative snapshots + commands with acknowledgement. */
+/** Commands whose effect does not depend on the exact state the judge saw (the server retries them too). */
+const ADDITIVE = new Set(["score.add", "score.subtract", "penalty.add"]);
+
+/**
+ * What a command will most likely do, drawn on the judge's screen the moment it is tapped. Only a preview: it is
+ * replaced by the server's snapshot once the command is confirmed and dropped if the server rejects it.
+ */
+type Preview = { kind: "score"; side: "red" | "blue"; delta: number } | { kind: "clock"; running: boolean; remainingMs: number; at: number };
+
+function previewFor(snap: MatchSnapshot | null, command: { type: string } & Record<string, unknown>, offset: number): Preview | null {
+  if (!snap || snap.status !== "live") return null;
+  const side = command.side === "red" || command.side === "blue" ? command.side : null;
+  if (side && (command.type === "score.add" || command.type === "score.subtract")) {
+    const points = snap.rules?.definition.scoring.find((a) => a.code === command.code)?.points;
+    if (!points) return null;
+    return { kind: "score", side, delta: command.type === "score.add" ? points : -points };
+  }
+  if (command.type === "timer.stop" || command.type === "timer.start") {
+    const now = Date.now();
+    const elapsed = snap.clock.running ? now + offset - snap.serverTime : 0;
+    const remainingMs = Math.max(0, snap.clock.remainingMs - elapsed);
+    return { kind: "clock", running: command.type === "timer.start", remainingMs, at: now + offset };
+  }
+  return null;
+}
+
+function withPreviews(snap: MatchSnapshot | null, previews: Preview[]): MatchSnapshot | null {
+  if (!snap || !previews.length) return snap;
+  const score = { ...snap.state.score };
+  let clock = snap.clock;
+  let serverTime = snap.serverTime;
+  for (const p of previews) {
+    if (p.kind === "score") score[p.side] = Math.max(0, score[p.side] + p.delta);
+    else {
+      clock = { running: p.running, remainingMs: p.remainingMs };
+      serverTime = p.at;
+    }
+  }
+  return { ...snap, clock, serverTime, state: { ...snap.state, score } };
+}
+
+type Queued = { command: object; resolve: (o: CommandOutcome) => void; type: string; sentAt: number };
+type Ack = { ok: boolean; result?: { status: "accepted" | "duplicate"; version?: number }; error?: { code: string; message: string } };
+
+/** Officials' channel: authoritative snapshots + commands with acknowledgement and an instant on-screen preview. */
 export function useMatchChannel(matchId: string) {
   const [snapshot, setSnapshot] = useState<MatchSnapshot | null>(null);
   const [status, setStatus] = useState<LinkStatus>("connecting");
   const [error, setError] = useState<string | null>(null);
   const [offset, setOffset] = useState(0);
   const [pending, setPending] = useState<PendingCommand[]>([]);
+  const [previews, setPreviews] = useState<{ id: string; preview: Preview; untilVersion: number | null }[]>([]);
   const socketRef = useRef<Socket | null>(null);
+  const snapRef = useRef<MatchSnapshot | null>(null);
+  const offsetRef = useRef(0);
+  // Version the next state-dependent command is based on: the shown snapshot, raised by this judge's own confirmed
+  // commands, so a pause right after "+3" is not rejected because the "+3" snapshot is still on its way.
   const versionRef = useRef(-1);
   const inFlightRef = useRef(new Set<string>());
-  const queueRef = useRef(new Map<string, { body: object; resolve: (o: CommandOutcome) => void; type: string; sentAt: number }>());
-  // Lets a lost-ack retry call the current flush without the callback referring to itself.
+  const queueRef = useRef(new Map<string, Queued>());
+  // Lets an ack or a lost-ack retry call the current flush without the callback referring to itself.
   const retryRef = useRef<(socket: Socket) => void>(() => undefined);
 
-  const accept = useCallback((snap: MatchSnapshot) => {
-    if (snap.version < versionRef.current) return;
-    versionRef.current = snap.version;
-    setSnapshot((prev) => ({ ...snap, viewer: snap.viewer ?? prev?.viewer }));
+  const syncPending = useCallback(() => {
+    setPending([...queueRef.current].map(([id, q]) => ({ commandId: id, type: q.type, sentAt: q.sentAt })));
   }, []);
 
-  const flush = useCallback((socket: Socket) => {
-    for (const [commandId, item] of queueRef.current) {
-      if (inFlightRef.current.has(commandId)) continue;
-      inFlightRef.current.add(commandId);
-      socket
-        .timeout(8000)
-        .emitWithAck("match.command", item.body)
-        .then((ack: { ok: boolean; result?: { status: "accepted" | "duplicate" }; error?: { code: string; message: string } }) => {
-          inFlightRef.current.delete(commandId);
-          queueRef.current.delete(commandId);
-          setPending([...queueRef.current].map(([id, q]) => ({ commandId: id, type: q.type, sentAt: q.sentAt })));
-          item.resolve(ack.ok ? { ok: true, status: ack.result?.status } : { ok: false, error: ack.error });
-        })
-        .catch(() => {
-          inFlightRef.current.delete(commandId);
-          // No ack: keep it queued with the same commandId (the server answers "duplicate" if it was applied).
-          // Disconnected → resent on reconnect; still connected (slow server, lost ack) → retried here, otherwise
-          // it would wait for a reconnect that may never come and stay "pending" forever.
-          if (socket.connected) setTimeout(() => socket.connected && retryRef.current(socket), 1500);
-        });
-    }
+  const accept = useCallback((snap: MatchSnapshot) => {
+    if (snap.version < (snapRef.current?.version ?? -1)) return;
+    versionRef.current = Math.max(versionRef.current, snap.version);
+    // A preview stays until the snapshot that contains its command arrives.
+    setPreviews((list) => list.filter((p) => p.untilVersion === null || p.untilVersion > snap.version));
+    const next = { ...snap, viewer: snap.viewer ?? snapRef.current?.viewer };
+    snapRef.current = next;
+    setSnapshot(next);
   }, []);
+
+  const flush = useCallback(
+    (socket: Socket) => {
+      for (const [commandId, item] of queueRef.current) {
+        if (inFlightRef.current.has(commandId)) continue;
+        // A state-dependent command (pause, end…) waits for the commands tapped before it: sent together, it would
+        // carry a version they are about to change and be rejected as a conflict.
+        const additive = ADDITIVE.has(item.type);
+        if (!additive && inFlightRef.current.size > 0) break;
+        inFlightRef.current.add(commandId);
+        const body = { matchId, commandId, expectedVersion: versionRef.current, command: item.command };
+        socket
+          .timeout(8000)
+          .emitWithAck("match.command", body)
+          .then((ack: Ack) => {
+            inFlightRef.current.delete(commandId);
+            queueRef.current.delete(commandId);
+            syncPending();
+            const version = ack.result?.version;
+            if (ack.ok && version !== undefined) versionRef.current = Math.max(versionRef.current, version);
+            const shownVersion = snapRef.current?.version ?? -1;
+            setPreviews((list) =>
+              ack.ok && version !== undefined && version > shownVersion
+                ? list.map((p) => (p.id === commandId ? { ...p, untilVersion: version } : p))
+                : list.filter((p) => p.id !== commandId),
+            );
+            item.resolve(ack.ok ? { ok: true, status: ack.result?.status } : { ok: false, error: ack.error });
+            if (socket.connected) retryRef.current(socket);
+          })
+          .catch(() => {
+            inFlightRef.current.delete(commandId);
+            // No ack: keep it queued with the same commandId (the server answers "duplicate" if it was applied).
+            // Disconnected → resent on reconnect; still connected (slow server, lost ack) → retried here, otherwise
+            // it would wait for a reconnect that may never come and stay "pending" forever.
+            if (socket.connected) setTimeout(() => socket.connected && retryRef.current(socket), 1500);
+          });
+        if (!additive) break;
+      }
+    },
+    [matchId, syncPending],
+  );
 
   useEffect(() => {
     retryRef.current = flush;
   }, [flush]);
+
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
 
   useEffect(() => {
     const socket = io(`${realtimeBase()}/realtime`, {
@@ -130,6 +209,7 @@ export function useMatchChannel(matchId: string) {
         return;
       }
       versionRef.current = -1;
+      snapRef.current = null;
       inFlightRef.current.clear();
       accept(ack.snapshot);
       setStatus("online");
@@ -150,18 +230,20 @@ export function useMatchChannel(matchId: string) {
   const send = useCallback(
     (command: { type: string } & Record<string, unknown>): Promise<CommandOutcome> => {
       const commandId = crypto.randomUUID();
-      const body = { matchId, commandId, expectedVersion: versionRef.current, command };
+      const preview = previewFor(snapRef.current, command, offsetRef.current);
+      if (preview) setPreviews((list) => [...list, { id: commandId, preview, untilVersion: null }]);
       return new Promise((resolve) => {
-        queueRef.current.set(commandId, { body, resolve, type: command.type, sentAt: Date.now() });
-        setPending([...queueRef.current].map(([id, q]) => ({ commandId: id, type: q.type, sentAt: q.sentAt })));
+        queueRef.current.set(commandId, { command, resolve, type: command.type, sentAt: Date.now() });
+        syncPending();
         const socket = socketRef.current;
         if (socket?.connected) flush(socket);
       });
     },
-    [matchId, flush],
+    [flush, syncPending],
   );
 
-  return { snapshot, status, error, offset, pending, send };
+  const shown = useMemo(() => withPreviews(snapshot, previews.map((p) => p.preview)), [snapshot, previews]);
+  return { snapshot: shown, status, error, offset, pending, send };
 }
 
 /** TV display channel: read-only, by public token. */
