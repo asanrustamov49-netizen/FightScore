@@ -13,7 +13,7 @@ build/
 coverage/
 
 # env files: секреты не коммитятся, шаблон .env.example — коммитится
-.env*
+.env.local
 !.env.example
 
 # typescript
@@ -32,3 +32,6 @@ Thumbs.db
 # Claude Code: personal settings and local preview configuration stay on this machine
 .claude/settings.local.json
 .claude/launch.json
+
+.vercel
+.env.local
