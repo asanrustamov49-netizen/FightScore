@@ -250,6 +250,8 @@ export interface PublicSide {
   countryName: string | null;
   club: string | null;
   score: number;
+  /** Disqualified: the score above is already 0 (the log keeps the points). */
+  disqualified?: boolean;
   penalties: { code: string; label: string; count: number }[];
 }
 

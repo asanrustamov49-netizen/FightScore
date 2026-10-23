@@ -23,7 +23,7 @@ export function DisplayPage() {
   }, []);
 
   const side = (s: Side, p: PublicSide) => (
-    <section className={`${styles.side} ${styles[s]}`}>
+    <section className={`${styles.side} ${styles[s]} ${p.disqualified ? styles.dq : ""}`}>
       <div>
         <div className={styles.name}>{p.name ?? "—"}</div>
         <div className={styles.country}>
@@ -34,6 +34,7 @@ export function DisplayPage() {
       <div className={styles.score} key={p.score}>
         {p.score}
       </div>
+      {p.disqualified && <div className={styles.dqLabel}>Дисквалифицирован</div>}
       <div className={styles.penalties}>
         {p.penalties.map((x) => (
           <span key={x.code} className={styles.penalty}>

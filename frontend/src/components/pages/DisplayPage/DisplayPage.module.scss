@@ -159,6 +159,34 @@
   color: #f2b33d;
 }
 
+// Disqualified corner: dimmed score, a loud label readable from the back of the hall.
+.dq {
+  .score {
+    color: rgba(255, 255, 255, 0.45);
+  }
+
+  .name {
+    text-decoration: line-through;
+    text-decoration-thickness: 0.08em;
+  }
+}
+
+.dqLabel {
+  align-self: flex-start;
+  padding: 0.25em 0.7em;
+  border-radius: 0.3em;
+  background: #e5202e;
+  color: #fff;
+  max-width: 100%;
+  // Sized to fit one corner (about 38% of the screen width): "Дисквалифицирован" is 17 letters.
+  font-size: clamp(0.85rem, 1.9vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-transform: uppercase;
+  box-shadow: 0 0 0 0.12em rgba(255, 255, 255, 0.9);
+}
+
 .foot {
   padding: 1.2vh 2.5vw;
   background: #06101f;

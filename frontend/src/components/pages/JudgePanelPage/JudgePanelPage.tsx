@@ -117,6 +117,14 @@ export function JudgePanelPage() {
 
   const dq = dqMethod(def?.endMethods);
 
+  // Corner disqualified by the pending or confirmed result (the board shows it with 0 points).
+  const outcome =
+    s.status === "completed" && s.result
+      ? { code: s.result.outcome_code, winner: s.result.winner_side }
+      : s.state.pendingResult && { code: s.state.pendingResult.outcomeCode, winner: s.state.pendingResult.winnerSide };
+  const outcomeMethod = outcome && def?.endMethods.find((m) => m.code === outcome.code);
+  const disqualified: Side | null = outcomeMethod && dqMethod([outcomeMethod]) && outcome.winner ? OTHER[outcome.winner] : null;
+
   const sidePanel = (side: Side) => {
     const p = s.participants[side];
     const pens = def?.penalties.filter((d) => (s.state.penalties[side][d.code] ?? 0) > 0) ?? [];
@@ -135,6 +143,7 @@ export function JudgePanelPage() {
           </div>
         </div>
         <div className={styles.penalties}>
+          {disqualified === side && <Badge tone="danger">Дисквалифицирован</Badge>}
           {pens.map((d) => (
             <Badge key={d.code} tone="warning">
               {d.label} × {s.state.penalties[side][d.code]}

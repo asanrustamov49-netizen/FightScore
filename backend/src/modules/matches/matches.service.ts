@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { AppError } from '../../common/errors.js';
 import { DatabaseService, type Db } from '../../database/database.service.js';
-import { definitionSchema, type OfficialAction, type RuleDefinition } from '../rules/definition.js';
+import { definitionSchema, isDisqualification, withDisqualification, type OfficialAction, type RuleDefinition } from '../rules/definition.js';
 import { remainingAt, type MatchState, type MatchStatus, type Side } from '../rules/engine.js';
 
 export interface StateRow {
@@ -60,7 +60,7 @@ export class MatchesService {
   parseDefinition(versionId: string, raw: unknown): RuleDefinition {
     let def = this.definitions.get(versionId);
     if (!def) {
-      def = definitionSchema.parse(raw);
+      def = withDisqualification(definitionSchema.parse(raw));
       this.definitions.set(versionId, def);
     }
     return def;
@@ -185,13 +185,22 @@ export class MatchesService {
         countryCode: p?.country_code ?? null,
         countryName: p?.country_name ?? null,
         club: p?.club_name ?? null,
-        score: snap.state.score[s],
+        // A disqualified athlete's points no longer count: the board shows 0 (the log keeps every scored point).
+        score: disqualified === s ? 0 : snap.state.score[s],
+        disqualified: disqualified === s,
         penalties: (def?.penalties ?? [])
           .filter((d) => publicPenalties.has(d.code) && (snap.state.penalties[s][d.code] ?? 0) > 0)
           .map((d) => ({ code: d.code, label: d.label, count: snap.state.penalties[s][d.code] })),
       };
     };
     const end = def?.endMethods.find((e) => e.code === snap.result?.outcome_code);
+    // Disqualified corner, from the pending result as soon as the judge ends the match, or from the confirmed one.
+    const outcome =
+      snap.status === 'completed'
+        ? snap.result && { code: snap.result.outcome_code, winner: snap.result.winner_side }
+        : snap.state.pendingResult && { code: snap.state.pendingResult.outcomeCode, winner: snap.state.pendingResult.winnerSide };
+    const dqMethod = outcome && def?.endMethods.find((e) => e.code === outcome.code);
+    const disqualified: Side | null = dqMethod && isDisqualification(dqMethod) && outcome.winner ? (outcome.winner === 'red' ? 'blue' : 'red') : null;
     return {
       matchId: snap.id,
       matchNumber: snap.matchNumber,

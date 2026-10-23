@@ -40,3 +40,19 @@ export const definitionSchema = z
   });
 
 export type RuleDefinition = z.infer<typeof definitionSchema>;
+
+/**
+ * Disqualification is available in every profile, even one that does not list it: a referee must always be able to
+ * stop a match for a fatal foul. A profile's own disqualification method (code "dq" or a label that says so) is used
+ * as is; the stored, immutable definition is never changed, the method is only added when the definition is loaded.
+ */
+export const BUILTIN_DQ = { code: 'dq', label: 'Дисквалификация соперника', requiresWinner: true } as const;
+
+export function isDisqualification(m: { code: string; label: string; requiresWinner: boolean }) {
+  return m.requiresWinner && (m.code === BUILTIN_DQ.code || /дисквал/i.test(m.label));
+}
+
+export function withDisqualification(def: RuleDefinition): RuleDefinition {
+  if (def.endMethods.some(isDisqualification) || def.endMethods.some((m) => m.code === BUILTIN_DQ.code)) return def;
+  return { ...def, endMethods: [...def.endMethods, { ...BUILTIN_DQ }] };
+}
