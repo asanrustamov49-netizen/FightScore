@@ -1,0 +1,43 @@
+# Render Blueprint: the FightScore API (backend/) for the cloud variant, docs/ARCHITECTURE.md §9.2.
+# The frontend is deployed on Vercel (root directory frontend/) and proxies /api to this service.
+# Secrets (DATABASE_URL) and the Vercel address (PUBLIC_ORIGINS) are entered in the Render dashboard: sync: false.
+services:
+  - type: web
+    name: fightscore-api
+    runtime: node
+    # Close to the Supabase database (ap-southeast-1): every judge command makes 2-3 database round trips.
+    region: singapore
+    # Free sleeps after 15 min idle (30-60 s to wake). For a live tournament use starter or higher.
+    plan: free
+    rootDir: backend
+    # Exactly one instance: realtime broadcast and match timers live in the process (§9.2).
+    numInstances: 1
+    # Dev dependencies are needed to compile, even with NODE_ENV=production.
+    buildCommand: npm ci --include=dev && npm run build
+    # Free plans have no pre-deploy step: migrations run right before the server starts.
+    # Supabase keeps its own backups, and pg_dump is not installed here, hence FS_SKIP_BACKUP.
+    startCommand: npm run db:migrate && npm run start:prod
+    healthCheckPath: /api/auth/options
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: DEPLOY_MODE
+        value: production
+      - key: DEPLOY_TARGET
+        value: cloud
+      - key: TRUST_PROXY_HOPS
+        value: "2"
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_SSL
+        value: require
+      - key: FS_SKIP_BACKUP
+        value: "1"
+      - key: ALLOW_REGISTRATION
+        value: "true"
+      - key: DATABASE_URL
+        sync: false
+      - key: PUBLIC_ORIGINS
+        sync: false

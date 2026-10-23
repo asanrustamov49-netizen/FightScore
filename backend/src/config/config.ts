@@ -5,6 +5,9 @@ const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DEPLOY_MODE: z.enum(['dev-http', 'production']).default('dev-http'),
   DEPLOY_TARGET: z.enum(['local', 'cloud']).default('local'),
+  // Cloud only: how many proxies in front of the app add X-Forwarded-For. Render alone: 1. Vercel rewrite → Render: 2
+  // (otherwise every request looks like it comes from Vercel and the sign-in throttle would hit everyone at once).
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(1).max(5).default(1),
   HOST: z.string().min(1).default('127.0.0.1'),
   PORT: z.coerce.number().int().min(1).max(65535).default(3001),
   DATABASE_URL: z.string().url(),

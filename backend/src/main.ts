@@ -26,7 +26,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
   app.disable('x-powered-by');
   // Behind Render's proxy only; in a LAN X-Forwarded-* headers must not be trusted (ARCHITECTURE §9.2).
-  if (config.DEPLOY_TARGET === 'cloud') app.set('trust proxy', 1);
+  if (config.DEPLOY_TARGET === 'cloud') app.set('trust proxy', config.TRUST_PROXY_HOPS);
   app.enableShutdownHooks();
 
   const pending = await withRetry(() => pendingMigrations(app.get(DatabaseService).pool, 'migrations'), logger);
