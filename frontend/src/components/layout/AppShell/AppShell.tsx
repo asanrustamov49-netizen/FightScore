@@ -19,6 +19,8 @@ interface NavItem {
   /** Shown only when the user has this permission (UI hint; the server checks every request). */
   permission?: string;
   capability?: keyof Me["capabilities"];
+  /** Active only on this exact path (a section home whose sub-pages have their own item). */
+  exact?: boolean;
 }
 
 const NAV: { group: string; items: NavItem[] }[] = [
@@ -34,12 +36,13 @@ const NAV: { group: string; items: NavItem[] }[] = [
   },
   { group: "Регламенты", items: [{ href: "/rules", label: "Профили правил", icon: "book" }] },
   {
-    group: "Система",
+    group: "Администрирование",
     items: [
-      { href: "/admin/users", label: "Пользователи", icon: "shield", permission: "user.manage" },
-      { href: "/settings", label: "Настройки", icon: "settings" },
+      { href: "/admin", label: "Обзор платформы", icon: "shield", capability: "platformAdmin", exact: true },
+      { href: "/admin/users", label: "Пользователи", icon: "users", capability: "platformAdmin" },
     ],
   },
+  { group: "Система", items: [{ href: "/settings", label: "Настройки", icon: "settings" }] },
 ];
 
 /** Logo mark: the red and blue corners split by the centre line. Inline SVG, no network. */
@@ -210,7 +213,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   if (error || !me) return <ErrorState message={error ?? "Нет данных профиля"} onRetry={refresh} />;
 
-  const isActive = (href: string) => pathname === href || pathname.startsWith(`${href}/`);
+  const isActive = (n: NavItem) => pathname === n.href || (!n.exact && pathname.startsWith(`${n.href}/`));
   const roleNames = [...new Set(me.roles.map((r) => r.name))].join(", ") || "Без роли";
   // Judge panel and public display are open to everyone (the pages sign in and check access); the organizer's panel
   // is shown to organizers only.
@@ -240,8 +243,8 @@ export function AppShell({ children }: { children: ReactNode }) {
                   <Link
                     key={n.href}
                     href={n.href}
-                    className={`${styles.link} ${isActive(n.href) ? styles.active : ""}`}
-                    aria-current={isActive(n.href) ? "page" : undefined}
+                    className={`${styles.link} ${isActive(n) ? styles.active : ""}`}
+                    aria-current={isActive(n) ? "page" : undefined}
                     onClick={() => setMenuOpen(false)}
                   >
                     <Icon name={n.icon} size={19} />

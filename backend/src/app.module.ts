@@ -20,7 +20,7 @@ import { RulesController } from './modules/rules/rules.controller.js';
 import { ScoringController } from './modules/scoring/scoring.controller.js';
 import { ScoringService } from './modules/scoring/scoring.service.js';
 import { TournamentsController } from './modules/tournaments/tournaments.controller.js';
-import { UsersController } from './modules/users/users.controller.js';
+import { AdminController, UsersController } from './modules/users/users.controller.js';
 
 /**
  * MVP keeps one Nest module; module boundaries are the folders under src/modules
@@ -31,6 +31,7 @@ import { UsersController } from './modules/users/users.controller.js';
     AppController,
     AuthController,
     UsersController,
+    AdminController,
     AthletesController,
     TournamentsController,
     MatchesController,

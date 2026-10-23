@@ -70,6 +70,10 @@ export function LoginPage() {
             На главную
           </Link>
         </p>
+        <Link href="/admin/login" className={styles.adminLink}>
+          <Icon name="shield" size={14} />
+          Вход для администратора
+        </Link>
       </main>
     </div>
   );

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 /** Pages anyone may open: start page, sign-in, judge and TV entry points, public display links. */
 function isPublic(pathname: string): boolean {
-  return pathname === "/" || pathname === "/login" || pathname === "/judge" || pathname === "/display" || pathname.startsWith("/display/");
+  return pathname === "/" || pathname === "/login" || pathname === "/admin/login" || pathname === "/judge" || pathname === "/display" || pathname.startsWith("/display/");
 }
 
 /**

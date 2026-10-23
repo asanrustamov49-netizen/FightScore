@@ -37,8 +37,19 @@ export class AuthController {
   @HttpCode(200)
   async login(@Body() body: unknown, @Req() req: AuthedRequest, @Res({ passthrough: true }) res: Response, @ClientIp() ip: string | null) {
     const { login, password } = parse(loginSchema, body);
-    const { token, user } = await this.auth.login(login, password, ip, req.headers['user-agent'] ?? null);
-    res.setHeader('Set-Cookie', sessionCookie(this.config, token, this.auth.sessionTtlSec));
+    const { token, ttl, user } = await this.auth.login(login, password, ip, req.headers['user-agent'] ?? null);
+    res.setHeader('Set-Cookie', sessionCookie(this.config, token, ttl));
+    return this.profile(user);
+  }
+
+  /** The platform administrator's own door: accepts only that account; a shorter session (see ADMIN_SESSION_TTL_SEC). */
+  @Public()
+  @Post('admin/login')
+  @HttpCode(200)
+  async adminLogin(@Body() body: unknown, @Req() req: AuthedRequest, @Res({ passthrough: true }) res: Response, @ClientIp() ip: string | null) {
+    const { login, password } = parse(loginSchema, body);
+    const { token, ttl, user } = await this.auth.login(login, password, ip, req.headers['user-agent'] ?? null, 'admin');
+    res.setHeader('Set-Cookie', sessionCookie(this.config, token, ttl));
     return this.profile(user);
   }
 
@@ -109,6 +120,7 @@ export class AuthController {
         organizer: grants.some((g) => ['tournament.manage', 'tournament.create'].includes(g.permission)),
         judge: grants.some((g) => g.permission === 'match.officiate') || officiates,
         displays: grants.some((g) => g.permission === 'display.operate'),
+        platformAdmin: roles.some((r) => r.code === 'owner'),
       },
       deployMode: this.config.DEPLOY_MODE,
     };

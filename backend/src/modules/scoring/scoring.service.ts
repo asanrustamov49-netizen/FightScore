@@ -82,7 +82,9 @@ const READ_SQL = `
          m.bracket_id
     FROM match_states ms
     JOIN matches m ON m.id = ms.match_id
+    -- A blocked or deleted official loses the match at once, even with a realtime connection still open.
     LEFT JOIN match_officials mo ON mo.match_id = ms.match_id AND mo.user_id = $3
+          AND EXISTS (SELECT 1 FROM users WHERE id = $3 AND is_active)
    WHERE ms.match_id = $1`;
 
 /**

@@ -16,6 +16,15 @@ const MAX_FAILURES = 5;
 const FAILURE_WINDOW_MS = 5 * 60_000;
 const TICKET_TTL_MS = 30_000;
 const TOUCH_INTERVAL_MS = 5 * 60_000;
+/** The platform administrator signs in for a working day, not a week: a forgotten admin session is the costliest one. */
+export const ADMIN_SESSION_TTL_SEC = 8 * 3600;
+
+/**
+ * Two doors: the regular sign-in for organizers and judges, and a separate one for the platform administrator.
+ * Each door accepts only its own accounts and answers every mismatch with the same generic error, so the regular
+ * form cannot be used to find out which login belongs to the administrator.
+ */
+export type LoginDoor = 'user' | 'admin';
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest();
 
@@ -43,27 +52,35 @@ export class AuthService {
     }
   }
 
-  async login(login: string, password: string, ip: string | null, userAgent: string | null) {
-    const key = `${ip ?? '?'}|${login.toLowerCase()}`;
+  async login(login: string, password: string, ip: string | null, userAgent: string | null, door: LoginDoor = 'user') {
+    // The admin door is limited per address, whatever login is tried: guessing the secret login is throttled too.
+    const key = door === 'admin' ? `admin|${ip ?? '?'}` : `${ip ?? '?'}|${login.toLowerCase()}`;
     this.checkRate(key);
     const user = await this.db.one(
-      `SELECT id, login, display_name, password_hash, is_active FROM users WHERE lower(login) = lower($1)`,
+      `SELECT u.id, u.login, u.display_name, u.password_hash, u.is_active, u.blocked_at IS NOT NULL AS blocked,
+              EXISTS (SELECT 1 FROM user_role_assignments a JOIN roles r ON r.id = a.role_id
+                       WHERE a.user_id = u.id AND r.code = 'owner') AS is_admin
+         FROM users u WHERE lower(u.login) = lower($1) AND u.deleted_at IS NULL`,
       [login],
     );
-    const ok = !!user && user.is_active && (await verifyPassword(password, user.password_hash));
-    if (!ok) {
+    const rightDoor = !!user && user.is_admin === (door === 'admin');
+    const passwordOk = rightDoor && (await verifyPassword(password, user.password_hash));
+    if (!passwordOk || !user.is_active) {
       this.failures.get(key)!.push(Date.now());
       await this.audit.record({
         actorUserId: user?.id ?? null,
-        action: 'auth.login_failed',
+        action: door === 'admin' ? 'auth.admin_login_failed' : 'auth.login_failed',
         entityType: 'user',
         entityId: user?.id ?? null,
-        data: { login },
+        data: { login, ...(passwordOk ? { blocked: true } : {}) },
         ip,
       });
+      // Only someone who knows the password learns that the account is blocked.
+      if (passwordOk && user.blocked) throw new AppError('FORBIDDEN', 'Аккаунт заблокирован администратором платформы. Обратитесь к организатору турнира.');
       throw new AppError('UNAUTHENTICATED', 'Неверный логин или пароль');
     }
     this.failures.delete(key);
+    const ttl = door === 'admin' ? ADMIN_SESSION_TTL_SEC : this.sessionTtlSec;
     // Session, last_login_at and the audit row in one atomic statement (one round trip, no explicit transaction).
     const token = randomBytes(32).toString('base64url');
     await this.db.query(
@@ -74,10 +91,10 @@ export class AuthService {
          UPDATE users SET last_login_at = now() WHERE id = $1 RETURNING id
        )
        INSERT INTO audit_log (actor_user_id, action, entity_type, entity_id, ip, data)
-       SELECT $1, 'auth.login', 'user', $1, $4, '{}' FROM s, u`,
-      [user.id, sha256(token), this.sessionTtlSec, ip, userAgent?.slice(0, 300) ?? null],
+       SELECT $1, $6, 'user', $1, $4, '{}' FROM s, u`,
+      [user.id, sha256(token), ttl, ip, userAgent?.slice(0, 300) ?? null, door === 'admin' ? 'auth.admin_login' : 'auth.login'],
     );
-    return { token, user: { id: user.id, login: user.login, displayName: user.display_name } as SessionUser };
+    return { token, ttl, user: { id: user.id, login: user.login, displayName: user.display_name } as SessionUser };
   }
 
   /**

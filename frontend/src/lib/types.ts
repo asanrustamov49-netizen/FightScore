@@ -8,7 +8,7 @@ export interface Me {
   user: { id: string; login: string; displayName: string };
   roles: { code: string; name: string; scope_type: string; tournament_id: string | null }[];
   permissions: string[];
-  capabilities: { organizer: boolean; judge: boolean; displays: boolean };
+  capabilities: { organizer: boolean; judge: boolean; displays: boolean; platformAdmin?: boolean };
   deployMode: "dev-http" | "production";
 }
 

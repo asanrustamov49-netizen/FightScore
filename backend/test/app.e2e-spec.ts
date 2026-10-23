@@ -74,6 +74,7 @@ async function resetDatabase() {
     ['chief', 'chief_judge'],
     ['judge', 'judge'],
     ['other', 'judge'],
+    ['boss', 'owner'],
   ]) {
     await c.query(
       `WITH u AS (INSERT INTO users (login, display_name, password_hash) VALUES ($1, $1, $2) RETURNING id)
@@ -465,5 +466,52 @@ describe.skipIf(!TEST_DB)('FightScore MVP scenario (PostgreSQL)', () => {
     expect((await api().get('/api/auth/me').set('Cookie', b)).status).toBe(401);
     expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: PASSWORD })).status).toBe(401);
     expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: 'brand-new-pass-1' })).status).toBe(200);
+  });
+
+  it('platform admin: own door only, blocks, resets passwords, deletes; exactly one admin', async () => {
+    // Each door accepts only its own accounts, with the same generic answer.
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'boss', password: PASSWORD })).status).toBe(401);
+    expect((await api().post('/api/auth/admin/login').set(H).send({ login: 'org', password: PASSWORD })).status).toBe(401);
+    const adm = await api().post('/api/auth/admin/login').set(H).send({ login: 'boss', password: PASSWORD });
+    expect(adm.status, JSON.stringify(adm.body)).toBe(200);
+    expect(adm.body.capabilities.platformAdmin).toBe(true);
+    expect(adm.headers['set-cookie'][0]).toContain('Max-Age=28800');
+    const boss = adm.headers['set-cookie'][0].split(';')[0];
+    const asBoss = { get: (p: string) => api().get(`/api${p}`).set('Cookie', boss), post: (p: string, b: object = {}) => api().post(`/api${p}`).set(H).set('Cookie', boss).send(b) };
+
+    // Only the admin manages users.
+    expect((await as('org').get('/users')).status).toBe(403);
+    expect((await asBoss.get('/admin/overview')).body.users).toBeGreaterThan(3);
+    const users = (await asBoss.get('/users')).body as { id: string; login: string }[];
+    const id = (login: string) => users.find((u) => u.login === login)!.id;
+
+    // Block: sessions end, sign-in says "blocked" only to someone who knows the password, officiating stops.
+    const t = await api().post('/api/auth/login').set(H).send({ login: 'other', password: PASSWORD });
+    const other = t.headers['set-cookie'][0].split(';')[0];
+    expect((await asBoss.post(`/users/${id('other')}/block`, { reason: 'e2e' })).status).toBe(201);
+    expect((await api().get('/api/auth/me').set('Cookie', other)).status).toBe(401);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'other', password: PASSWORD })).status).toBe(403);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'other', password: 'wrong-pass-1' })).status).toBe(401);
+    expect((await asBoss.post(`/users/${id('other')}/unblock`)).status).toBe(201);
+    expect((await asBoss.post(`/users/${id('other')}/password`, { password: 'fresh-pass-123' })).status).toBe(201);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'other', password: 'fresh-pass-123' })).status).toBe(200);
+
+    // The admin cannot touch itself; no second admin can exist.
+    const self = users.find((u) => u.login === 'boss')!.id;
+    expect((await asBoss.post(`/users/${self}/block`)).status).toBe(409);
+    const c = db();
+    await c.connect();
+    await expect(
+      c.query(`INSERT INTO user_role_assignments (user_id, role_id, scope_type) SELECT $1, id, 'system' FROM roles WHERE code = 'owner'`, [id('org')]),
+    ).rejects.toThrow(/one_admin/);
+
+    // Delete: retype the login; the account is anonymized, its history stays.
+    expect((await api().delete(`/api/users/${id('other')}?confirmLogin=nope`).set(H).set('Cookie', boss)).status).toBe(400);
+    expect((await api().delete(`/api/users/${id('other')}?confirmLogin=other`).set(H).set('Cookie', boss)).status).toBe(200);
+    expect((await api().post('/api/auth/login').set(H).send({ login: 'other', password: 'fresh-pass-123' })).status).toBe(401);
+    const gone = await c.query(`SELECT login, deleted_at IS NOT NULL AS deleted FROM users WHERE id = $1`, [id('other')]);
+    await c.end();
+    expect(gone.rows[0]).toMatchObject({ login: `deleted-${id('other')}`, deleted: true });
+    expect(((await asBoss.get('/users')).body as { login: string }[]).some((u) => u.login === 'other')).toBe(false);
   });
 });

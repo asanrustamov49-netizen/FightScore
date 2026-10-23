@@ -179,6 +179,22 @@
   color: var(--fs-text-muted);
 }
 
+// Quiet on purpose: everyone except one person should walk past it.
+.adminLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  font-size: 0.8rem;
+  color: var(--fs-text-muted);
+  opacity: 0.75;
+
+  &:hover {
+    color: var(--fs-text);
+    opacity: 1;
+  }
+}
+
 .home {
   display: inline-flex;
   align-items: center;
