@@ -1,0 +1,59 @@
+# Deploys the API (backend/) to Render when it changes on main, but only after lint, type check, unit tests and
+# the build pass. Render itself is not linked to GitHub (the service was created from the public repository URL),
+# so this workflow is what triggers its deploys. The frontend deploys through Vercel's own Git integration.
+#
+# Secret: RENDER_DEPLOY_HOOK_URL — Render → fightscore-api → Settings → Deploy Hook. A hook can only start a deploy
+# of this one service, unlike an account API key.
+name: Deploy API to Render
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - "render.yaml"
+      - ".github/workflows/render-deploy.yml"
+  workflow_dispatch:
+
+# One deploy at a time; a newer push replaces a queued one.
+concurrency:
+  group: render-deploy
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit -p .
+      - run: npm test
+      - run: npm run build
+
+  deploy:
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Render deploy
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "::error::Secret RENDER_DEPLOY_HOOK_URL is not set (Render → fightscore-api → Settings → Deploy Hook)."
+            exit 1
+          fi
+          # The hook URL contains a key: never echo it.
+          curl --fail --silent --show-error --retry 3 --retry-delay 5 -X POST "$HOOK" -o response.json
+          echo "Render deploy started: $(grep -o '"id":"[^"]*"' response.json | head -1)"
