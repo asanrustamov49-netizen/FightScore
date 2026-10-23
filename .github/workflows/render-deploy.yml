@@ -57,6 +57,14 @@ jobs:
             echo "::error::Secret RENDER_DEPLOY_HOOK_URL is not set (Render → fightscore-api → Settings → Deploy Hook)."
             exit 1
           fi
+          # A pasted secret often carries spaces, a line break or quotes: strip them before use.
+          HOOK="$(printf '%s' "$HOOK" | tr -d "[:space:]\"'")"
+          case "$HOOK" in
+            https://api.render.com/deploy/srv-*) ;;
+            *)
+              echo "::error::RENDER_DEPLOY_HOOK_URL is not a Render deploy hook: expected https://api.render.com/deploy/srv-...?key=... (the value has ${#HOOK} characters and starts with '${HOOK:0:8}')."
+              exit 1 ;;
+          esac
           # The hook URL contains a key: never echo it.
           curl --fail --silent --show-error --retry 3 --retry-delay 5 -X POST "$HOOK" -o response.json
           echo "Render deploy started: $(grep -o '"id":"[^"]*"' response.json | head -1)"
