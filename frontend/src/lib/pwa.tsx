@@ -53,6 +53,16 @@ export function PwaRegistration() {
     };
     window.addEventListener("beforeinstallprompt", onPrompt);
     window.addEventListener("appinstalled", onInstalled);
+    // Installed app relaunched (manifest launch_handler "focus-existing"): this window is focused and receives the
+    // launch. The icon opens the start page — keep whatever is on screen; a link or shortcut to a specific page — go there.
+    const launchQueue = (window as Window & { launchQueue?: { setConsumer: (fn: (p: { targetURL?: string }) => void) => void } }).launchQueue;
+    launchQueue?.setConsumer(({ targetURL }) => {
+      if (!targetURL) return;
+      const target = new URL(targetURL);
+      if (target.origin !== location.origin || target.href === location.href) return;
+      if (target.pathname === "/" && !target.search && !target.hash) return;
+      location.assign(target.href);
+    });
     if (process.env.NODE_ENV === "production" && "serviceWorker" in navigator && window.isSecureContext) {
       navigator.serviceWorker.register("/sw.js", { scope: "/", updateViaCache: "none" }).catch(() => undefined);
     }

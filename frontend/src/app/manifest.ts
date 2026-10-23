@@ -1,8 +1,19 @@
 import type { MetadataRoute } from "next";
 
-export default function manifest(): MetadataRoute.Manifest {
+/**
+ * One window: launching the installed app again (its icon, a shortcut, or a link to this site while the app is
+ * installed) brings the open window forward instead of opening a second copy. "focus-existing" keeps the current
+ * screen (a judge mid-match does not lose the panel); PwaRegistration navigates only when a specific page was opened.
+ * Browsers without launch_handler (Firefox, Safari) keep their own behaviour.
+ */
+type AppManifest = MetadataRoute.Manifest & { handle_links?: "preferred" | "auto" | "not-preferred" };
+
+export default function manifest(): AppManifest {
   return {
     id: "/",
+    launch_handler: { client_mode: ["focus-existing", "auto"] },
+    // Links to this site open in the installed app (Chromium link capturing, where supported).
+    handle_links: "preferred",
     name: "FightScore — судейство и табло",
     short_name: "FightScore",
     description: "Турниры, судейская панель и ТВ-табло для соревнований по единоборствам",
