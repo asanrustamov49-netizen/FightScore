@@ -569,7 +569,7 @@ export function TournamentDetailPage() {
           </Stack>
         )}
 
-        {tab === "results" && <ResultsCard matches={completed} />}
+        {tab === "results" && <ResultsCard matches={completed} protocol={`/tournaments/${id}/protocol`} />}
       </Stack>
 
       <ConfirmDialog
@@ -606,9 +606,23 @@ export function TournamentDetailPage() {
   );
 }
 
-function ResultsCard({ matches, more }: { matches: MatchListItem[]; more?: string }) {
+function ResultsCard({ matches, more, protocol }: { matches: MatchListItem[]; more?: string; protocol?: string }) {
   return (
-    <Card title="Результаты" actions={more && <Link href={more}>Все результаты</Link>} flush>
+    <Card
+      title="Результаты"
+      actions={
+        more ? (
+          <Link href={more}>Все результаты</Link>
+        ) : (
+          protocol && (
+            <ButtonLink href={protocol} size="sm">
+              Протокол для печати
+            </ButtonLink>
+          )
+        )
+      }
+      flush
+    >
       {matches.length ? (
         <Table
           caption="Подтверждённые результаты"

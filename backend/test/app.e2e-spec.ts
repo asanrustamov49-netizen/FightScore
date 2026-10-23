@@ -468,6 +468,20 @@ describe.skipIf(!TEST_DB)('FightScore MVP scenario (PostgreSQL)', () => {
     expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: 'brand-new-pass-1' })).status).toBe(200);
   });
 
+  it('results protocol lists confirmed results only, for those who may see the tournament', async () => {
+    const res = await as('org').get(`/tournaments/${tournamentId}/protocol`);
+    expect(res.status, JSON.stringify(res.body)).toBe(200);
+    expect(res.body.tournament.id).toBe(tournamentId);
+    expect(res.body.results.length).toBeGreaterThan(0);
+    for (const r of res.body.results) {
+      expect(r.outcome).toBeTruthy();
+      expect(r.participants.length).toBe(2);
+    }
+    const stranger = await api().post('/api/auth/register').set(H).send({ login: 'stranger.org', displayName: 'S', password: PASSWORD });
+    const cookie = stranger.headers['set-cookie'][0].split(';')[0];
+    expect((await api().get(`/api/tournaments/${tournamentId}/protocol`).set('Cookie', cookie)).status).toBe(404);
+  });
+
   it('platform admin: own door only, blocks, resets passwords, deletes; exactly one admin', async () => {
     // Each door accepts only its own accounts, with the same generic answer.
     expect((await api().post('/api/auth/login').set(H).send({ login: 'boss', password: PASSWORD })).status).toBe(401);

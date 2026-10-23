@@ -219,6 +219,47 @@ export class MatchesController {
     );
   }
 
+  /**
+   * Official results protocol of a tournament: every confirmed result as it was frozen at confirmation (athletes,
+   * clubs, final score, method, rule version, who confirmed). Built only from append-only rows, so a printed protocol
+   * always matches the database. Same visibility as GET /matches.
+   */
+  @Get('tournaments/:id/protocol')
+  async protocol(@CurrentUser() user: SessionUser, @Param('id') id: string) {
+    const tournamentId = parse(uuid, id);
+    const visible = await this.access.visibleTournamentIds(user.id);
+    if (visible && !visible.includes(tournamentId)) throw new AppError('NOT_FOUND', 'Турнир не найден');
+    const [tournament, rows] = await Promise.all([
+      this.db.one(
+        `SELECT t.id, t.name, t.starts_on, t.ends_on, t.venue, t.status, u.display_name AS organizer,
+                (SELECT count(*)::int FROM matches m WHERE m.tournament_id = t.id) AS matches_total
+           FROM tournaments t JOIN users u ON u.id = t.created_by WHERE t.id = $1`,
+        [tournamentId],
+      ),
+      this.db.query(
+        `SELECT m.id, m.match_number, d.name AS discipline, mr.winner_side, mr.outcome_code, mr.confirmed_at,
+                mr.participants_snapshot AS participants, mr.final_state->'score' AS score,
+                mr.rule_profile_version_id, rpv.definition, rp.name AS rule_profile, rpv.version_number, rpv.is_demo,
+                cu.display_name AS confirmed_by
+           FROM match_results mr
+           JOIN matches m ON m.id = mr.match_id
+           JOIN disciplines d ON d.id = m.discipline_id
+           JOIN rule_profile_versions rpv ON rpv.id = mr.rule_profile_version_id
+           JOIN rule_profiles rp ON rp.id = rpv.rule_profile_id
+           JOIN users cu ON cu.id = mr.confirmed_by
+          WHERE m.tournament_id = $1
+          ORDER BY m.match_number`,
+        [tournamentId],
+      ),
+    ]);
+    if (!tournament) throw new AppError('NOT_FOUND', 'Турнир не найден');
+    const results = rows.map(({ definition, rule_profile_version_id, ...r }) => {
+      const def = this.matches.parseDefinition(rule_profile_version_id, definition);
+      return { ...r, outcome: def.endMethods.find((e) => e.code === r.outcome_code)?.label ?? r.outcome_code };
+    });
+    return { tournament, results, generatedAt: new Date().toISOString() };
+  }
+
   /** Brackets of a tournament with every position: pairs, results and who went through. Same visibility as GET /matches. */
   @Get('tournaments/:id/brackets')
   async brackets(@CurrentUser() user: SessionUser, @Param('id') tournamentId: string) {

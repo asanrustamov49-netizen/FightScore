@@ -1,0 +1,221 @@
+@use "../../../styles/mixins" as *;
+
+// A paper document: white sheet, black text, same in light and dark theme. The toolbar never prints.
+.page {
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--fs-bg);
+
+  @include up($bp-md) {
+    padding: 1.5rem 2rem 3rem;
+  }
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-width: 210mm;
+  margin: 0 auto 1rem;
+}
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  font-weight: 600;
+  color: var(--fs-text-muted);
+
+  &:hover {
+    color: var(--fs-text);
+  }
+}
+
+.toolbarActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.sheet {
+  max-width: 210mm;
+  margin: 0 auto;
+  padding: 14mm 12mm;
+  background: #fff;
+  color: #111;
+  border-radius: 4px;
+  box-shadow: 0 20px 50px -25px rgba(0, 0, 0, 0.55);
+  font-size: 10.5pt;
+  line-height: 1.4;
+  overflow-x: auto;
+
+  @include down($bp-sm) {
+    padding: 8mm 5mm;
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  padding-bottom: 5mm;
+  border-bottom: 2px solid #111;
+
+  h1 {
+    margin: 0.15rem 0 0.25rem;
+    font-size: 18pt;
+    line-height: 1.15;
+    color: #111;
+  }
+}
+
+.kicker {
+  margin: 0;
+  font-size: 8.5pt;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #b81f2b;
+}
+
+.meta {
+  margin: 0;
+  color: #444;
+}
+
+.facts {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  font-size: 9pt;
+
+  div {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  dt {
+    min-width: 7.5rem;
+    color: #666;
+  }
+
+  dd {
+    margin: 0;
+    font-weight: 600;
+  }
+}
+
+.demo {
+  margin: 4mm 0 0;
+  padding: 2mm 3mm;
+  border: 1px solid #c98a00;
+  background: #fff7e0;
+  font-size: 9pt;
+}
+
+.table {
+  width: 100%;
+  margin-top: 5mm;
+  border-collapse: collapse;
+  font-size: 9.5pt;
+
+  th {
+    padding: 2mm 2mm;
+    border-bottom: 1.5px solid #111;
+    font-size: 8pt;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-align: left;
+    text-transform: uppercase;
+    color: #333;
+  }
+
+  td {
+    padding: 2.2mm 2mm;
+    border-bottom: 1px solid #ddd;
+    vertical-align: top;
+  }
+
+  tr {
+    break-inside: avoid;
+  }
+}
+
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.score {
+  font-weight: 700;
+  font-size: 11pt;
+}
+
+.winner strong {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 2px;
+}
+
+.sub {
+  display: block;
+  margin-top: 0.5mm;
+  font-size: 8.5pt;
+  color: #555;
+}
+
+.empty {
+  margin: 8mm 0;
+  color: #555;
+}
+
+.signatures {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12mm;
+  margin-top: 14mm;
+  font-size: 9pt;
+  color: #444;
+  break-inside: avoid;
+
+  span {
+    display: block;
+    height: 9mm;
+    margin-bottom: 1.5mm;
+    border-bottom: 1px solid #111;
+  }
+}
+
+.note {
+  margin: 8mm 0 0;
+  font-size: 8pt;
+  color: #777;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  .page {
+    padding: 0;
+    background: #fff;
+  }
+
+  .toolbar {
+    display: none;
+  }
+
+  .sheet {
+    max-width: none;
+    padding: 0;
+    box-shadow: none;
+    border-radius: 0;
+    overflow: visible;
+  }
+}
