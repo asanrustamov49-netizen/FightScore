@@ -45,6 +45,19 @@ const NAV: { group: string; items: NavItem[] }[] = [
   { group: "Система", items: [{ href: "/settings", label: "Настройки", icon: "settings" }] },
 ];
 
+/**
+ * Phone tab bar: the four places used most, always one thumb away; everything else stays in the side menu ("Ещё").
+ * Items the user cannot use are skipped and the next one takes the slot.
+ */
+const TABS: NavItem[] = [
+  { href: "/dashboard", label: "Обзор", icon: "dashboard" },
+  { href: "/tournaments", label: "Турниры", icon: "trophy" },
+  { href: "/matches", label: "Поединки", icon: "versus" },
+  { href: "/displays", label: "Табло", icon: "display", capability: "displays" },
+  { href: "/judge", label: "Судья", icon: "judge", capability: "judge" },
+  { href: "/admin", label: "Админ", icon: "shield", capability: "platformAdmin", exact: true },
+];
+
 /** Logo mark: the red and blue corners split by the centre line. Inline SVG, no network. */
 export function BrandMark({ size = 28 }: { size?: number }) {
   // Unique gradient ids: two marks on one page must not point at a hidden one.
@@ -304,6 +317,20 @@ export function AppShell({ children }: { children: ReactNode }) {
         <main className={styles.main} id="main" tabIndex={-1}>
           {children}
         </main>
+        <nav className={styles.tabbar} aria-label="Быстрая навигация">
+          {TABS.filter(visible)
+            .slice(0, 4)
+            .map((n) => (
+              <Link key={n.href} href={n.href} className={`${styles.tab} ${isActive(n) ? styles.tabActive : ""}`} aria-current={isActive(n) ? "page" : undefined}>
+                <Icon name={n.icon} size={22} />
+                <span>{n.label}</span>
+              </Link>
+            ))}
+          <button type="button" className={`${styles.tab} ${menuOpen ? styles.tabActive : ""}`} onClick={() => setMenuOpen(true)} aria-expanded={menuOpen} aria-label="Открыть всё меню">
+            <Icon name="menu" size={22} />
+            <span>Ещё</span>
+          </button>
+        </nav>
         <footer className={styles.footer}>
           <span>FightScore · рабочее название</span>
           <span className={styles.footerNote}>

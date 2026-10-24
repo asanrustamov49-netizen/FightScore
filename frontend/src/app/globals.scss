@@ -49,37 +49,37 @@
 :root,
 [data-theme="dark"] {
   color-scheme: dark;
-  --fs-bg: #0a0c10;
-  --fs-bg-raised: #0e1116;
-  --fs-surface: #13171e;
-  --fs-surface-2: #1a1f28;
-  --fs-surface-hover: #181c24;
-  --fs-surface-glass: rgba(19, 23, 30, 0.92);
-  --fs-border: #232934;
-  --fs-border-strong: #333b49;
+  --fs-bg: #080b12;
+  --fs-bg-raised: #0d111a;
+  --fs-surface: #121723;
+  --fs-surface-2: #19202d;
+  --fs-surface-hover: #171d2a;
+  --fs-surface-glass: rgba(16, 21, 32, 0.9);
+  --fs-border: #222a39;
+  --fs-border-strong: #34405a;
   --fs-text: #eceff4;
   --fs-text-muted: #9aa3b2;
   --fs-text-faint: #6b7382;
 
-  --fs-red: #e5333f;
-  --fs-red-strong: #ff5560;
-  --fs-red-soft: rgba(229, 51, 63, 0.14);
-  --fs-blue: #2f6bff;
-  --fs-blue-strong: #6e98ff;
-  --fs-blue-soft: rgba(47, 107, 255, 0.14);
-  --fs-cyan: #6e98ff;
-  --fs-accent: #f2b33d;
-  --fs-success: #35c97a;
-  --fs-warning: #f2b33d;
+  --fs-red: #ff3346;
+  --fs-red-strong: #ff6470;
+  --fs-red-soft: rgba(255, 51, 70, 0.16);
+  --fs-blue: #3b7bff;
+  --fs-blue-strong: #82abff;
+  --fs-blue-soft: rgba(59, 123, 255, 0.17);
+  --fs-cyan: #5ad1ff;
+  --fs-accent: #ffc43d;
+  --fs-success: #3ddc84;
+  --fs-warning: #ffc43d;
   --fs-danger: #ff6464;
   --fs-focus: #7ea6ff;
 
-  // Kept as tokens so components stay unchanged; flat on purpose.
-  // Red is the action and event accent (UFC-style); blue stays the second corner.
-  --fs-primary: #e5333f;
-  --fs-primary-grad: linear-gradient(180deg, #f0404b, #d72a36);
-  --fs-primary-grad-hover: linear-gradient(180deg, #ff4f5a, #e5333f);
-  --fs-brand-grad: linear-gradient(90deg, #ff5560, #e5333f);
+  // Fight-night palette (2026-10-24): saturated corners, a fire gradient for actions, lit backgrounds.
+  // Red is the action and event accent; blue stays the second corner.
+  --fs-primary: #d81a36;
+  --fs-primary-grad: linear-gradient(135deg, #e8402e, #c8102e);
+  --fs-primary-grad-hover: linear-gradient(135deg, #f04a36, #d4153c);
+  --fs-brand-grad: linear-gradient(90deg, #ff7a3c, #ff2350);
   --fs-corner-stripe: linear-gradient(90deg, var(--fs-red) 50%, var(--fs-blue) 50%);
 
   --fs-success-soft: rgba(47, 191, 113, 0.13);
@@ -98,13 +98,13 @@
   --fs-header-bg: rgba(10, 12, 16, 0.9);
   --fs-backdrop: rgba(0, 0, 0, 0.66);
   --fs-pattern: rgba(160, 175, 200, 0.06);
-  --fs-glow-red: rgba(229, 51, 63, 0.06);
-  --fs-glow-blue: rgba(47, 107, 255, 0.07);
+  --fs-glow-red: rgba(255, 51, 70, 0.15);
+  --fs-glow-blue: rgba(59, 123, 255, 0.17);
   --fs-highlight: inset 0 0 0 0 transparent;
   --fs-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --fs-shadow: 0 8px 24px -10px rgba(0, 0, 0, 0.6);
   --fs-shadow-lg: 0 24px 56px -18px rgba(0, 0, 0, 0.75);
-  --fs-shadow-primary: 0 8px 22px -10px rgba(229, 51, 63, 0.8);
+  --fs-shadow-primary: 0 10px 30px -8px rgba(255, 51, 70, 0.7);
   --fs-ring: 0 0 0 3px rgba(126, 166, 255, 0.3);
   --fs-skeleton: rgba(160, 175, 200, 0.07);
   --fs-skeleton-shine: rgba(160, 175, 200, 0.13);
