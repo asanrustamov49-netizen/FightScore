@@ -78,9 +78,12 @@ export class AuthController {
     res.setHeader('Set-Cookie', clearSessionCookie(this.config));
   }
 
+  /** Current user; also renews the session and its cookie (sliding expiry, see AuthService.renew). */
   @Get('me')
-  me(@CurrentUser() user: SessionUser) {
-    return this.profile(user);
+  async me(@CurrentUser() user: SessionUser, @Req() req: AuthedRequest, @Res({ passthrough: true }) res: Response) {
+    const [profile, ttl] = await Promise.all([this.profile(user), this.auth.renew(req.sessionToken)]);
+    if (ttl) res.setHeader('Set-Cookie', sessionCookie(this.config, req.sessionToken!, ttl));
+    return profile;
   }
 
   /** Own display name. Login and roles are not editable here: roles come only from an administrator or organizer. */

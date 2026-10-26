@@ -468,6 +468,18 @@ describe.skipIf(!TEST_DB)('FightScore MVP scenario (PostgreSQL)', () => {
     expect((await api().post('/api/auth/login').set(H).send({ login: 'acct.user', password: 'brand-new-pass-1' })).status).toBe(200);
   });
 
+  it('renews the session on every app start (GET /auth/me), so an installed app stays signed in', async () => {
+    const c = db();
+    await c.connect();
+    await c.query(`UPDATE sessions SET expires_at = now() + interval '1 hour' WHERE revoked_at IS NULL`);
+    const res = await as('org').get('/auth/me');
+    expect(res.status).toBe(200);
+    expect(res.headers['set-cookie'][0]).toContain('Max-Age=2592000');
+    const left = await c.query(`SELECT min(expires_at - now()) > interval '29 days' AS renewed FROM sessions s JOIN users u ON u.id = s.user_id WHERE u.login = 'org' AND s.revoked_at IS NULL AND s.last_seen_at > now() - interval '1 minute'`);
+    await c.end();
+    expect(left.rows[0].renewed).toBe(true);
+  });
+
   it('results protocol lists confirmed results only, for those who may see the tournament', async () => {
     const res = await as('org').get(`/tournaments/${tournamentId}/protocol`);
     expect(res.status, JSON.stringify(res.body)).toBe(200);

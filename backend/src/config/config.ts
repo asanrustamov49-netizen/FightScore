@@ -17,8 +17,9 @@ const schema = z.object({
   DATABASE_SSL_CA: z.string().optional(),
   // Comma-separated list of browser origins allowed to call the API and open sockets.
   PUBLIC_ORIGINS: z.string().default('http://localhost:3000,http://127.0.0.1:3000'),
-  // 7 days: an organizer signs in once for the tournament week. Sign-out and a password change still end it.
-  SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 30).default(24 * 7),
+  // Sliding session: 30 days since the last visit (every app start renews it), so an installed app stays signed in.
+  // Sign-out, a password change, blocking and deleting still end it at once.
+  SESSION_TTL_HOURS: z.coerce.number().int().min(1).max(24 * 90).default(24 * 30),
   // Self-service organizer sign-up. Unset: on in dev-http, off in production (an admin creates accounts).
   ALLOW_REGISTRATION: z.enum(['true', 'false']).optional(),
 });

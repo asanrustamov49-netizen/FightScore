@@ -21,8 +21,8 @@ describe('loadConfig', () => {
     expect(() => loadConfig({ ...base, PORT: '70000' })).toThrow(/PORT/);
   });
 
-  it('keeps sessions for 7 days by default', () => {
-    expect(loadConfig({ ...base }).SESSION_TTL_HOURS).toBe(168);
+  it('keeps sessions for 30 days since the last visit by default', () => {
+    expect(loadConfig({ ...base }).SESSION_TTL_HOURS).toBe(720);
   });
 
   it('accepts any loopback origin in dev-http, only listed origins in production', () => {

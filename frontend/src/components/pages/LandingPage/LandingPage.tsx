@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 import { Brand } from "@/src/components/layout/AppShell/AppShell";
 import { ButtonLink } from "@/src/components/ui/Button/Button";
@@ -36,8 +37,17 @@ const STEPS: { title: string; text: string }[] = [
   { title: "Подтвердите итог", text: "Главный судья подтверждает результат, он попадает в журнал." },
 ];
 
+/** Where a signed-in user works: the administrator, an organizer, or a judge. */
+function homeFor(me: Me) {
+  if (me.capabilities.platformAdmin) return "/admin";
+  if (me.capabilities.organizer) return "/dashboard";
+  if (me.capabilities.judge) return "/judge";
+  return "/dashboard";
+}
+
 /** Public start page: what FightScore is, who it is for, and where to begin. Nothing here needs an account. */
 export function LandingPage() {
+  const router = useRouter();
   const [me, setMe] = useState<Me | null | undefined>(undefined);
   const [registration, setRegistration] = useState(false);
   const [section, setSection] = useState<string | null>(null);
@@ -81,12 +91,19 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    currentUser<Me>().then(setMe, () => setMe(null));
+    currentUser<Me>().then(
+      (m) => {
+        setMe(m);
+        // The installed app opens on this start page: a signed-in user goes straight to their working screen.
+        if (m && window.matchMedia("(display-mode: standalone)").matches) router.replace(homeFor(m));
+      },
+      () => setMe(null),
+    );
     api.get<AuthOptions>("/auth/options").then(
       (o) => setRegistration(o.registration),
       () => setRegistration(false),
     );
-  }, []);
+  }, [router]);
 
   const startHref = registration ? "/login?mode=register&next=/dashboard" : "/login?next=/dashboard";
 

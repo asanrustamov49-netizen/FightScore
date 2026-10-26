@@ -151,6 +151,27 @@ export class AuthService {
     return { id: row.user_id, login: row.login, displayName: row.display_name };
   }
 
+  /**
+   * Sliding expiry: moves the session's end to "now + lifetime" and returns that lifetime for the cookie, so someone
+   * who keeps using the app is never asked to sign in again. Called on GET /auth/me, i.e. once per app start.
+   * The administrator keeps the short admin lifetime, renewed the same way.
+   */
+  async renew(token: string | undefined): Promise<number | null> {
+    if (!token) return null;
+    const row = await this.db.one<{ is_admin: boolean }>(
+      `UPDATE sessions s SET last_seen_at = now(),
+              expires_at = now() + make_interval(secs => CASE WHEN a.is_admin THEN $2::float8 ELSE $3::float8 END)
+         FROM (SELECT EXISTS (SELECT 1 FROM sessions s2 JOIN user_role_assignments ura ON ura.user_id = s2.user_id
+                                JOIN roles r ON r.id = ura.role_id
+                               WHERE s2.token_hash = $1 AND r.code = 'owner') AS is_admin) a
+        WHERE s.token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()
+        RETURNING a.is_admin`,
+      [sha256(token), ADMIN_SESSION_TTL_SEC, this.sessionTtlSec],
+    );
+    if (!row) return null;
+    return row.is_admin ? ADMIN_SESSION_TTL_SEC : this.sessionTtlSec;
+  }
+
   async logout(token: string | undefined, user: SessionUser | null, ip: string | null) {
     if (!token) return;
     await this.db.query(`UPDATE sessions SET revoked_at = now() WHERE token_hash = $1 AND revoked_at IS NULL`, [sha256(token)]);

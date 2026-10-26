@@ -2,10 +2,13 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { Brand } from "@/src/components/layout/AppShell/AppShell";
 import { Icon, type IconName } from "@/src/components/ui/Icon/Icon";
 import { ImageCarousel } from "@/src/components/widgets/ImageCarousel/ImageCarousel";
 import { AuthForm } from "@/src/components/widgets/AuthForm/AuthForm";
+import { currentUser } from "@/src/lib/api";
+import type { Me } from "@/src/lib/types";
 import styles from "./LoginPage.module.scss";
 
 /** Only same-origin paths are accepted as a redirect target (no open redirect). */
@@ -24,6 +27,11 @@ export function LoginPage() {
   const query = useSearchParams();
   const next = safeNext(query.get("next"));
   const mode = query.get("mode") === "register" ? "register" : "login";
+
+  // Already signed in (the session lives on): go straight on. To switch accounts, sign out first.
+  useEffect(() => {
+    currentUser<Me>().then((me) => me && router.replace(next), () => undefined);
+  }, [router, next]);
 
   return (
     <div className={styles.page}>
