@@ -8,6 +8,7 @@ import { ModeSwitch, type Mode } from "@/src/components/ui/ModeSwitch/ModeSwitch
 import { ErrorState, PageSkeleton } from "@/src/components/ui/Notice/Notice";
 import { resetTips } from "@/src/lib/onboarding";
 import { usePreferences, useResolvedTheme } from "@/src/lib/preferences";
+import { useSlidingIndicator } from "@/src/lib/sliding-indicator";
 import { useSession } from "@/src/lib/session";
 import type { Me } from "@/src/lib/types";
 import styles from "./AppShell.module.scss";
@@ -196,6 +197,11 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { me, loading, error, can, logout, refresh } = useSession();
   const pathname = usePathname();
   const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+  const tabsRef = useRef<HTMLElement>(null);
+  // One highlight slides to the active item (side menu and phone tab bar); re-placed after the profile loads.
+  useSlidingIndicator(navRef, `${pathname}|${loading}`);
+  useSlidingIndicator(tabsRef, `${pathname}|${loading}`);
 
   useEffect(() => {
     if (!menuOpen) return;
@@ -245,7 +251,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Icon name="close" size={20} />
           </button>
         </div>
-        <nav className={styles.nav} aria-label="Основная навигация">
+        <nav ref={navRef} className={styles.nav} aria-label="Основная навигация">
+          <span className={styles.navIndicator} aria-hidden />
           {NAV.map((g) => {
             const items = g.items.filter(visible);
             if (!items.length) return null;
@@ -315,9 +322,13 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </header>
         <main className={styles.main} id="main" tabIndex={-1}>
-          {children}
+          {/* Keyed by path: each page fades in; switching tabs inside a page (?tab=) keeps it. */}
+          <div key={pathname} className={styles.pageIn}>
+            {children}
+          </div>
         </main>
-        <nav className={styles.tabbar} aria-label="Быстрая навигация">
+        <nav ref={tabsRef} className={styles.tabbar} aria-label="Быстрая навигация">
+          <span className={styles.tabIndicator} aria-hidden />
           {TABS.filter(visible)
             .slice(0, 4)
             .map((n) => (
